@@ -18,11 +18,48 @@ go build -o slack-cli .
 
 ## Setup
 
-Get a Slack Bot Token (`xoxb-...`) from
-[api.slack.com/apps](https://api.slack.com/apps) with the scopes
-your commands need (e.g. `chat:write`, `channels:read`,
-`channels:history`, `users:read`, `search:read`, `pins:write`,
-`reactions:write`, `files:write`, `reminders:write`).
+Create a Slack App at
+[api.slack.com/apps](https://api.slack.com/apps) and issue a
+token. A Bot Token (`xoxb-`) covers most operations. A User
+Token (`xoxp-`) is required for the full feature set.
+
+### Required Scopes
+
+**Bot Token (`xoxb-`) scopes:**
+
+| scope | commands |
+|---|---|
+| `channels:read` | `channels`, `channel info`, `members` |
+| `channels:history` | `history`, `unread` |
+| `channels:join` | `join` |
+| `channels:manage` | `channel set-topic/purpose`, `invite`, `leave` |
+| `groups:read` | private channel `channels` etc. |
+| `groups:history` | private channel `history` |
+| `im:read` | DM `channels`, `unread` |
+| `im:history` | DM `history` |
+| `mpim:read` | group DM listing |
+| `mpim:history` | group DM `history` |
+| `chat:write` | `send`, `send-ephemeral`, `edit`, `delete`, `scheduled` |
+| `chat:write.public` | `send` to channels the bot hasn't joined |
+| `files:read` | `canvas list` |
+| `files:write` | `upload` |
+| `pins:read` | `pin list` |
+| `pins:write` | `pin add/remove` |
+| `reactions:write` | `reaction add/remove` |
+| `users:read` | `users list/info/presence` |
+| `users:read.email` | `users lookup` |
+
+**User Token (`xoxp-`) only scopes:**
+
+These scopes are not available with Bot Tokens.
+
+| scope | commands |
+|---|---|
+| `search:read` | `search` |
+| `stars:read` | `bookmark list` |
+| `stars:write` | `bookmark add/remove` |
+| `reminders:read` | `reminder list` |
+| `reminders:write` | `reminder add/delete/complete` |
 
 ```bash
 # Interactive input (recommended)

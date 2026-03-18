@@ -93,3 +93,29 @@ Tokens are AES-256-GCM encrypted in `~/.slack-cli/config.json`.
 Master key stored in `~/.slack-cli-secrets/master.key`
 (auto-generated on first use).
 Multi-profile support via `--profile` flag on any command.
+
+### Required Scopes
+
+Bot Token (`xoxb-`) scopes:
+
+- `channels:read` -- `channels`, `channel info`, `members`
+- `channels:history` -- `history`, `unread`
+- `channels:join` -- `join`
+- `channels:manage` -- `set-topic/purpose`, `invite`, `leave`
+- `groups:read` / `groups:history` -- private channel ops
+- `im:read` / `im:history` -- DM ops
+- `mpim:read` / `mpim:history` -- group DM ops
+- `chat:write` -- `send`, `edit`, `delete`, `scheduled`
+- `chat:write.public` -- `send` to unjoined channels
+- `files:read` -- `canvas list`
+- `files:write` -- `upload`
+- `pins:read` / `pins:write` -- `pin` ops
+- `reactions:write` -- `reaction` ops
+- `users:read` -- `users list/info/presence`
+- `users:read.email` -- `users lookup`
+
+User Token (`xoxp-`) only scopes:
+
+- `search:read` -- `search`
+- `stars:read` / `stars:write` -- `bookmark` ops
+- `reminders:read` / `reminders:write` -- `reminder` ops

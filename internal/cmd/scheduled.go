@@ -27,12 +27,12 @@ type ScheduledListCmd struct {
 
 // Run executes the scheduled list command.
 func (c *ScheduledListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	messages, err := client.ListScheduledMessages(c.Channel, c.Limit)
 	if err != nil {
@@ -68,12 +68,12 @@ type ScheduledCancelCmd struct {
 
 // Run executes the scheduled cancel command.
 func (c *ScheduledCancelCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	if err := client.CancelScheduledMessage(c.Channel, c.ID); err != nil {
 		return err

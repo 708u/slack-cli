@@ -42,11 +42,12 @@ func (c *ConfigSetCmd) Run() error {
 		return err
 	}
 
-	if err := mgr.SetToken(token, c.Profile); err != nil {
+	kind, err := mgr.SetToken(token, c.Profile)
+	if err != nil {
 		return err
 	}
 
-	fmt.Println(color.GreenString("Token saved successfully for profile %q", profileName))
+	fmt.Println(color.GreenString("%s token saved successfully for profile %q", kind, profileName))
 	return nil
 }
 
@@ -145,7 +146,12 @@ func (c *ConfigGetCmd) Run() error {
 
 	bold := color.New(color.Bold)
 	bold.Printf("Configuration for profile %q:\n", profileName)
-	fmt.Printf("  Token: %s\n", color.CyanString(mgr.MaskToken(cfg.Token)))
+	if cfg.BotToken != "" {
+		fmt.Printf("  Bot token:  %s\n", color.CyanString(mgr.MaskToken(cfg.BotToken)))
+	}
+	if cfg.UserToken != "" {
+		fmt.Printf("  User token: %s\n", color.CyanString(mgr.MaskToken(cfg.UserToken)))
+	}
 	fmt.Printf("  Updated: %s\n", cfg.UpdatedAt)
 	return nil
 }
@@ -180,8 +186,18 @@ func (c *ConfigProfilesCmd) Run() error {
 		if p.Name == currentProfile {
 			marker = "*"
 		}
-		maskedToken := mgr.MaskToken(p.Config.Token)
-		fmt.Printf("  %s %s (%s)\n", marker, color.CyanString(p.Name), maskedToken)
+		var tokens []string
+		if p.Config.BotToken != "" {
+			tokens = append(tokens, "bot:"+mgr.MaskToken(p.Config.BotToken))
+		}
+		if p.Config.UserToken != "" {
+			tokens = append(tokens, "user:"+mgr.MaskToken(p.Config.UserToken))
+		}
+		tokenDisplay := strings.Join(tokens, ", ")
+		if tokenDisplay == "" {
+			tokenDisplay = "(no tokens)"
+		}
+		fmt.Printf("  %s %s (%s)\n", marker, color.CyanString(p.Name), tokenDisplay)
 	}
 	return nil
 }

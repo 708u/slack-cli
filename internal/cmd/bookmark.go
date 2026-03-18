@@ -26,12 +26,12 @@ type BookmarkAddCmd struct {
 
 // Run executes the bookmark add command.
 func (c *BookmarkAddCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.AddStar(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -49,12 +49,12 @@ type BookmarkListCmd struct {
 
 // Run executes the bookmark list command.
 func (c *BookmarkListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	result, err := client.ListStars(c.Limit)
 	if err != nil {
 		return err
@@ -101,12 +101,12 @@ type BookmarkRemoveCmd struct {
 
 // Run executes the bookmark remove command.
 func (c *BookmarkRemoveCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.RemoveStar(c.Channel, c.Timestamp); err != nil {
 		return err
 	}

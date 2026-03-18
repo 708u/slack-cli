@@ -22,3 +22,10 @@ func wrapSlackError(op string, err error) error {
 
 	return fmt.Errorf("%s: %w", op, err)
 }
+
+// isChannelNotFoundError checks whether err is a Slack API
+// channel_not_found error.
+func isChannelNotFoundError(err error) bool {
+	var slackErr slackgo.SlackErrorResponse
+	return errors.As(err, &slackErr) && slackErr.Err == "channel_not_found"
+}

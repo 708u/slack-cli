@@ -24,12 +24,12 @@ type HistoryCmd struct {
 
 // Run executes the history command.
 func (c *HistoryCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	var result *slack.HistoryResult
 

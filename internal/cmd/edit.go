@@ -22,12 +22,12 @@ func (c *EditCmd) Run() error {
 		return fmt.Errorf("invalid message timestamp format")
 	}
 
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.UpdateMessage(c.Channel, c.TS, c.Message); err != nil {
 		return err
 	}

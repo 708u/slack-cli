@@ -78,9 +78,9 @@ func (m *mockSlack) client() *slackgo.Client {
 // newTestClient creates a full Client backed by the mock server.
 func (m *mockSlack) newTestClient() *Client {
 	api := m.client()
-	c := &Client{api: api}
+	c := &Client{botAPI: api, userAPI: api}
 	c.channelOps = newChannelOps(api)
-	c.messageOps = newMessageOps(api, c.channelOps)
+	c.messageOps = newMessageOps(api, api, c.channelOps)
 	c.userOps = newUserOps(api)
 	c.searchOps = newSearchOps(api)
 	c.reactionOps = newReactionOps(api, c.channelOps)

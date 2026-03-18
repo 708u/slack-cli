@@ -22,12 +22,12 @@ type SearchCmd struct {
 
 // Run executes the search command.
 func (c *SearchCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	result, err := client.SearchMessages(c.Query, &slack.SearchMessagesOptions{
 		Sort:    c.Sort,

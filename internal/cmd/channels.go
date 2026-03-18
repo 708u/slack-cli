@@ -20,12 +20,12 @@ type ChannelsCmd struct {
 
 // Run executes the channels command.
 func (c *ChannelsCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	types := util.GetChannelTypes(c.Type)
 	channels, err := client.ListChannels(slack.ListChannelsOptions{

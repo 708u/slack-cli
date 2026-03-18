@@ -2,10 +2,16 @@ package config
 
 import "fmt"
 
-// GetConfigOrError returns the decrypted token for the given profile, or an
-// error if no configuration exists. When no ProfileConfigManager is supplied a
-// default instance is created.
-func GetConfigOrError(profile string, mgr ...*ProfileConfigManager) (string, error) {
+// TokenPair holds the resolved bot and user tokens for a profile.
+// At least one of BotToken or UserToken is non-empty.
+type TokenPair struct {
+	BotToken  string
+	UserToken string
+}
+
+// GetConfigOrError returns the decrypted tokens for the given profile,
+// or an error if no configuration exists.
+func GetConfigOrError(profile string, mgr ...*ProfileConfigManager) (*TokenPair, error) {
 	var m *ProfileConfigManager
 	if len(mgr) > 0 && mgr[0] != nil {
 		m = mgr[0]
@@ -15,13 +21,13 @@ func GetConfigOrError(profile string, mgr ...*ProfileConfigManager) (string, err
 
 	cfg, err := m.GetConfig(profile)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if cfg == nil {
 		profiles, listErr := m.ListProfiles()
 		if listErr != nil {
-			return "", listErr
+			return nil, listErr
 		}
 		profileName := profile
 		if profileName == "" {
@@ -35,13 +41,16 @@ func GetConfigOrError(profile string, mgr ...*ProfileConfigManager) (string, err
 		if profileName == "" {
 			profileName = defaultProfileName
 		}
-		return "", &ConfigurationError{
+		return nil, &ConfigurationError{
 			Msg: fmt.Sprintf(
-				"No configuration found for profile %q. Use \"slack-cli config set --token <token> --profile %s\" to set up.",
-				profileName, profileName,
+				"No configuration found for profile %q. Use \"slack-cli config set\" to set up.",
+				profileName,
 			),
 		}
 	}
 
-	return cfg.Token, nil
+	return &TokenPair{
+		BotToken:  cfg.BotToken,
+		UserToken: cfg.UserToken,
+	}, nil
 }

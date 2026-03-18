@@ -5,9 +5,12 @@ import (
 )
 
 // Client wraps the slack-go API client and delegates to domain-specific
-// operation structs.
+// operation structs. It supports separate bot and user tokens; APIs
+// that require a user token (search, stars, reminders) use the user
+// client automatically.
 type Client struct {
-	api *slackgo.Client
+	botAPI  *slackgo.Client
+	userAPI *slackgo.Client
 
 	channelOps  *ChannelOps
 	messageOps  *MessageOps
@@ -21,32 +24,59 @@ type Client struct {
 	canvasOps   *CanvasOps
 }
 
-// NewClient creates a Client backed by the given Slack API token.
-func NewClient(token string) *Client {
-	api := slackgo.New(token)
+// NewClient creates a Client. botToken and userToken are both optional
+// but at least one must be non-empty.
+//   - If only botToken: user-token-only commands will fail with a clear error.
+//   - If only userToken: used for all operations.
+//   - If both: bot token for general ops, user token for search/stars/reminders.
+func NewClient(botToken, userToken string) *Client {
+	// primary is used for most operations.
+	primary := botToken
+	if primary == "" {
+		primary = userToken
+	}
 
-	c := &Client{api: api}
+	// userOnly is used for APIs that require a user token.
+	userOnly := userToken
+	if userOnly == "" {
+		userOnly = primary
+	}
 
-	c.channelOps = newChannelOps(api)
-	c.messageOps = newMessageOps(api, c.channelOps)
+	api := slackgo.New(primary)
+	userAPI := api
+	if userOnly != primary {
+		userAPI = slackgo.New(userOnly)
+	}
+
+	// channelAPI uses the user token when available for broader
+	// channel visibility (e.g. private channels with groups:read).
+	channelAPI := userAPI
+
+	c := &Client{botAPI: api, userAPI: userAPI}
+
+	c.channelOps = newChannelOps(channelAPI)
+	c.messageOps = newMessageOps(api, userAPI, c.channelOps)
 	c.userOps = newUserOps(api)
-	c.searchOps = newSearchOps(api)
+	c.searchOps = newSearchOps(userAPI)
 	c.reactionOps = newReactionOps(api, c.channelOps)
 	c.pinOps = newPinOps(api, c.channelOps)
-	c.reminderOps = newReminderOps(api, token)
-	c.starOps = newStarOps(api)
+	c.reminderOps = newReminderOps(userAPI, userOnly)
+	c.starOps = newStarOps(userAPI)
 	c.fileOps = newFileOps(api, c.channelOps)
-	c.canvasOps = newCanvasOps(api, token, c.channelOps)
+	c.canvasOps = newCanvasOps(api, primary, c.channelOps)
 
 	return c
 }
 
 // NOTE: ChannelOps is defined in channel.go.
 
-// MessageOps groups message read/write API calls.
+// MessageOps groups message read/write API calls. It holds a
+// fallbackAPI (user token) to retry writes when the primary (bot)
+// token gets channel_not_found on private channels.
 type MessageOps struct {
-	api        *slackgo.Client
-	channelOps *ChannelOps
+	api         *slackgo.Client
+	fallbackAPI *slackgo.Client
+	channelOps  *ChannelOps
 }
 
 // UserOps groups user-related API calls.

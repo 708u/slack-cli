@@ -24,12 +24,12 @@ type CanvasReadCmd struct {
 
 // Run executes the canvas read command.
 func (c *CanvasReadCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	sections, err := client.ReadCanvas(c.ID)
 	if err != nil {
 		return err
@@ -82,12 +82,12 @@ type CanvasListCmd struct {
 
 // Run executes the canvas list command.
 func (c *CanvasListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	canvases, err := client.ListCanvases(c.Channel)
 	if err != nil {
 		return err

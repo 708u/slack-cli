@@ -26,12 +26,12 @@ type ChannelInfoCmd struct {
 
 // Run executes the channel info command.
 func (c *ChannelInfoCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	detail, err := client.GetChannelDetail(c.Channel)
 	if err != nil {
 		return err
@@ -50,12 +50,12 @@ type ChannelSetTopicCmd struct {
 
 // Run executes the channel set-topic command.
 func (c *ChannelSetTopicCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.SetTopic(c.Channel, c.Topic); err != nil {
 		return err
 	}
@@ -73,12 +73,12 @@ type ChannelSetPurposeCmd struct {
 
 // Run executes the channel set-purpose command.
 func (c *ChannelSetPurposeCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.SetPurpose(c.Channel, c.Purpose); err != nil {
 		return err
 	}

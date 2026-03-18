@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -19,9 +20,11 @@ const (
 	configFileName     = "config.json"
 )
 
-// Config holds the token and metadata for a single profile.
+// Config holds tokens and metadata for a single profile.
+// A profile may have a BotToken, a UserToken, or both.
 type Config struct {
-	Token     string `json:"token"`
+	BotToken  string `json:"botToken,omitempty"`
+	UserToken string `json:"userToken,omitempty"`
 	UpdatedAt string `json:"updatedAt"`
 }
 
@@ -89,37 +92,55 @@ func NewProfileConfigManager(opts ...Option) *ProfileConfigManager {
 	return m
 }
 
+// TokenKind indicates which slot a token was saved to.
+type TokenKind string
+
+const (
+	TokenKindBot  TokenKind = "Bot"
+	TokenKindUser TokenKind = "User"
+)
+
 // SetToken encrypts and saves a token for the given profile.
-// If profile is empty, the current default profile is used.
-func (m *ProfileConfigManager) SetToken(token, profile string) error {
+// The token prefix (xoxb- / xoxp-) determines which slot is used.
+// Returns the detected TokenKind.
+func (m *ProfileConfigManager) SetToken(token, profile string) (TokenKind, error) {
 	store, err := m.getConfigStore()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	profileName := profile
-	if profileName == "" {
-		profileName = store.DefaultProfile
-	}
-	if profileName == "" {
-		profileName = defaultProfileName
-	}
+	profileName := m.resolveProfileName(profile, store)
 
 	encrypted, err := m.cryptoService.Encrypt(token)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	store.Profiles[profileName] = Config{
-		Token:     encrypted,
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	cfg := store.Profiles[profileName]
+	cfg.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+
+	kind := detectTokenKind(token)
+	switch kind {
+	case TokenKindUser:
+		cfg.UserToken = encrypted
+	default:
+		cfg.BotToken = encrypted
 	}
+
+	store.Profiles[profileName] = cfg
 
 	if store.DefaultProfile == "" || profileName == defaultProfileName {
 		store.DefaultProfile = profileName
 	}
 
-	return m.saveConfigStore(store)
+	return kind, m.saveConfigStore(store)
+}
+
+func detectTokenKind(token string) TokenKind {
+	if strings.HasPrefix(token, "xoxp-") {
+		return TokenKindUser
+	}
+	return TokenKindBot
 }
 
 // GetConfig returns the decrypted configuration for the given profile.
@@ -130,40 +151,37 @@ func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
 		return nil, err
 	}
 
-	profileName := profile
-	if profileName == "" {
-		profileName = store.DefaultProfile
-	}
-	if profileName == "" {
-		profileName = defaultProfileName
-	}
+	profileName := m.resolveProfileName(profile, store)
 
 	cfg, ok := store.Profiles[profileName]
 	if !ok {
 		return nil, nil
 	}
 
-	decrypted := m.decryptToken(cfg.Token)
+	result := Config{UpdatedAt: cfg.UpdatedAt}
 
-	// Re-encrypt if not in current format and persist.
-	if !m.cryptoService.IsCurrentFormat(cfg.Token) {
-		encrypted, err := m.cryptoService.Encrypt(decrypted)
-		if err != nil {
-			return nil, err
-		}
-		store.Profiles[profileName] = Config{
-			Token:     encrypted,
-			UpdatedAt: cfg.UpdatedAt,
-		}
-		if err := m.saveConfigStore(store); err != nil {
-			return nil, err
-		}
+	if cfg.BotToken != "" {
+		result.BotToken = m.decryptToken(cfg.BotToken)
+	}
+	if cfg.UserToken != "" {
+		result.UserToken = m.decryptToken(cfg.UserToken)
 	}
 
-	return &Config{
-		Token:     decrypted,
-		UpdatedAt: cfg.UpdatedAt,
-	}, nil
+	if result.BotToken == "" && result.UserToken == "" {
+		return nil, nil
+	}
+
+	return &result, nil
+}
+
+func (m *ProfileConfigManager) resolveProfileName(profile string, store *ConfigStore) string {
+	if profile != "" {
+		return profile
+	}
+	if store.DefaultProfile != "" {
+		return store.DefaultProfile
+	}
+	return defaultProfileName
 }
 
 // ListProfiles returns all profiles with their configs.
@@ -228,13 +246,7 @@ func (m *ProfileConfigManager) ClearConfig(profile string) error {
 		return err
 	}
 
-	profileName := profile
-	if profileName == "" {
-		profileName = store.DefaultProfile
-	}
-	if profileName == "" {
-		profileName = defaultProfileName
-	}
+	profileName := m.resolveProfileName(profile, store)
 
 	delete(store.Profiles, profileName)
 
@@ -337,13 +349,15 @@ func (m *ProfileConfigManager) migrateOldConfig(data []byte) (*ConfigStore, erro
 		return nil, err
 	}
 
+	cfg := Config{UpdatedAt: old.UpdatedAt}
+	if detectTokenKind(plainToken) == TokenKindUser {
+		cfg.UserToken = encrypted
+	} else {
+		cfg.BotToken = encrypted
+	}
+
 	newStore := &ConfigStore{
-		Profiles: map[string]Config{
-			defaultProfileName: {
-				Token:     encrypted,
-				UpdatedAt: old.UpdatedAt,
-			},
-		},
+		Profiles:       map[string]Config{defaultProfileName: cfg},
 		DefaultProfile: defaultProfileName,
 	}
 

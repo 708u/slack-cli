@@ -19,7 +19,7 @@ type InviteCmd struct {
 
 // Run executes the invite command.
 func (c *InviteCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (c *InviteCmd) Run() error {
 		return fmt.Errorf("at least one valid user ID is required")
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.InviteToChannel(c.Channel, userIDs, c.Force); err != nil {
 		return err
 	}

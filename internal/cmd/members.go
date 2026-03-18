@@ -18,12 +18,12 @@ type MembersCmd struct {
 
 // Run executes the members command.
 func (c *MembersCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	result, err := client.GetChannelMembers(c.Channel, &slack.ChannelMembersOptions{
 		Limit: c.Limit,
 	})

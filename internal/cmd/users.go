@@ -26,12 +26,12 @@ type UsersListCmd struct {
 
 // Run executes the users list command.
 func (c *UsersListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	users, err := client.ListUsers(c.Limit)
 	if err != nil {
 		return err
@@ -60,12 +60,12 @@ type UsersInfoCmd struct {
 
 // Run executes the users info command.
 func (c *UsersInfoCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	user, err := client.GetUserInfo(c.ID)
 	if err != nil {
 		return err
@@ -84,12 +84,12 @@ type UsersLookupCmd struct {
 
 // Run executes the users lookup command.
 func (c *UsersLookupCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	user, err := client.LookupUserByEmail(c.Email)
 	if err != nil {
 		return err
@@ -116,12 +116,12 @@ func (c *UsersPresenceCmd) Run() error {
 		return errors.New("cannot use both --id and --name")
 	}
 
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	userID := c.ID
 	if c.Name != "" {

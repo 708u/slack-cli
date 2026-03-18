@@ -22,11 +22,15 @@ func setupTestDir(t *testing.T) (string, *ProfileConfigManager) {
 	return dir, mgr
 }
 
-func TestSetAndGetToken(t *testing.T) {
+func TestSetAndGetBotToken(t *testing.T) {
 	_, mgr := setupTestDir(t)
 
-	if err := mgr.SetToken("xoxb-test-token", ""); err != nil {
+	kind, err := mgr.SetToken("xoxb-test-token", "")
+	if err != nil {
 		t.Fatalf("SetToken: %v", err)
+	}
+	if kind != TokenKindBot {
+		t.Errorf("expected Bot kind, got %s", kind)
 	}
 
 	cfg, err := mgr.GetConfig("")
@@ -36,15 +40,60 @@ func TestSetAndGetToken(t *testing.T) {
 	if cfg == nil {
 		t.Fatal("expected config, got nil")
 	}
-	if cfg.Token != "xoxb-test-token" {
-		t.Errorf("expected token xoxb-test-token, got %s", cfg.Token)
+	if cfg.BotToken != "xoxb-test-token" {
+		t.Errorf("expected bot token xoxb-test-token, got %s", cfg.BotToken)
+	}
+	if cfg.UserToken != "" {
+		t.Errorf("expected empty user token, got %s", cfg.UserToken)
+	}
+}
+
+func TestSetAndGetUserToken(t *testing.T) {
+	_, mgr := setupTestDir(t)
+
+	kind, err := mgr.SetToken("xoxp-user-token", "")
+	if err != nil {
+		t.Fatalf("SetToken: %v", err)
+	}
+	if kind != TokenKindUser {
+		t.Errorf("expected User kind, got %s", kind)
+	}
+
+	cfg, err := mgr.GetConfig("")
+	if err != nil {
+		t.Fatalf("GetConfig: %v", err)
+	}
+	if cfg.UserToken != "xoxp-user-token" {
+		t.Errorf("expected user token xoxp-user-token, got %s", cfg.UserToken)
+	}
+}
+
+func TestSetBothTokens(t *testing.T) {
+	_, mgr := setupTestDir(t)
+
+	if _, err := mgr.SetToken("xoxb-bot-token", ""); err != nil {
+		t.Fatalf("SetToken bot: %v", err)
+	}
+	if _, err := mgr.SetToken("xoxp-user-token", ""); err != nil {
+		t.Fatalf("SetToken user: %v", err)
+	}
+
+	cfg, err := mgr.GetConfig("")
+	if err != nil {
+		t.Fatalf("GetConfig: %v", err)
+	}
+	if cfg.BotToken != "xoxb-bot-token" {
+		t.Errorf("expected bot token, got %s", cfg.BotToken)
+	}
+	if cfg.UserToken != "xoxp-user-token" {
+		t.Errorf("expected user token, got %s", cfg.UserToken)
 	}
 }
 
 func TestSetAndGetToken_NamedProfile(t *testing.T) {
 	_, mgr := setupTestDir(t)
 
-	if err := mgr.SetToken("xoxb-work-token", "work"); err != nil {
+	if _, err := mgr.SetToken("xoxb-work-token", "work"); err != nil {
 		t.Fatalf("SetToken: %v", err)
 	}
 
@@ -55,8 +104,8 @@ func TestSetAndGetToken_NamedProfile(t *testing.T) {
 	if cfg == nil {
 		t.Fatal("expected config, got nil")
 	}
-	if cfg.Token != "xoxb-work-token" {
-		t.Errorf("expected token xoxb-work-token, got %s", cfg.Token)
+	if cfg.BotToken != "xoxb-work-token" {
+		t.Errorf("expected token xoxb-work-token, got %s", cfg.BotToken)
 	}
 }
 
@@ -75,8 +124,8 @@ func TestGetConfig_NotFound(t *testing.T) {
 func TestListProfiles(t *testing.T) {
 	_, mgr := setupTestDir(t)
 
-	mgr.SetToken("token1", "default")
-	mgr.SetToken("token2", "work")
+	mgr.SetToken("xoxb-token1", "default")
+	mgr.SetToken("xoxb-token2", "work")
 
 	profiles, err := mgr.ListProfiles()
 	if err != nil {
@@ -100,8 +149,8 @@ func TestListProfiles(t *testing.T) {
 func TestUseProfile(t *testing.T) {
 	_, mgr := setupTestDir(t)
 
-	mgr.SetToken("token1", "default")
-	mgr.SetToken("token2", "work")
+	mgr.SetToken("xoxb-token1", "default")
+	mgr.SetToken("xoxb-token2", "work")
 
 	if err := mgr.UseProfile("work"); err != nil {
 		t.Fatalf("UseProfile: %v", err)
@@ -128,8 +177,8 @@ func TestUseProfile_NotExist(t *testing.T) {
 func TestClearConfig(t *testing.T) {
 	_, mgr := setupTestDir(t)
 
-	mgr.SetToken("token1", "default")
-	mgr.SetToken("token2", "work")
+	mgr.SetToken("xoxb-token1", "default")
+	mgr.SetToken("xoxb-token2", "work")
 
 	if err := mgr.ClearConfig("work"); err != nil {
 		t.Fatalf("ClearConfig: %v", err)
@@ -144,12 +193,11 @@ func TestClearConfig(t *testing.T) {
 func TestClearConfig_LastProfile(t *testing.T) {
 	dir, mgr := setupTestDir(t)
 
-	mgr.SetToken("token1", "default")
+	mgr.SetToken("xoxb-token1", "default")
 	if err := mgr.ClearConfig("default"); err != nil {
 		t.Fatalf("ClearConfig: %v", err)
 	}
 
-	// Config file should be deleted
 	configFile := filepath.Join(dir, "config", "config.json")
 	if _, err := os.Stat(configFile); !os.IsNotExist(err) {
 		t.Error("expected config file to be removed after clearing last profile")

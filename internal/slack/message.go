@@ -9,10 +9,11 @@ import (
 	slackgo "github.com/slack-go/slack"
 )
 
-func newMessageOps(api *slackgo.Client, channelOps *ChannelOps) *MessageOps {
+func newMessageOps(api, fallbackAPI *slackgo.Client, channelOps *ChannelOps) *MessageOps {
 	return &MessageOps{
-		api:        api,
-		channelOps: channelOps,
+		api:         api,
+		fallbackAPI: fallbackAPI,
+		channelOps:  channelOps,
 	}
 }
 
@@ -27,6 +28,9 @@ func (m *MessageOps) SendMessage(channel, text string, threadTS string) error {
 	}
 
 	_, _, err := m.api.PostMessage(channel, opts...)
+	if err != nil && m.fallbackAPI != m.api && isChannelNotFoundError(err) {
+		_, _, err = m.fallbackAPI.PostMessage(channel, opts...)
+	}
 	return err
 }
 

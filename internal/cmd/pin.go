@@ -26,12 +26,12 @@ type PinAddCmd struct {
 
 // Run executes the pin add command.
 func (c *PinAddCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.AddPin(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -49,12 +49,12 @@ type PinRemoveCmd struct {
 
 // Run executes the pin remove command.
 func (c *PinRemoveCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.RemovePin(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -72,12 +72,12 @@ type PinListCmd struct {
 
 // Run executes the pin list command.
 func (c *PinListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	items, err := client.ListPins(c.Channel)
 	if err != nil {
 		return err

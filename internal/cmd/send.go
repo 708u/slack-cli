@@ -44,12 +44,12 @@ func (c *SendCmd) Run() error {
 		return err
 	}
 
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	targetChannel, targetLabel, err := c.resolveTarget(client)
 	if err != nil {
@@ -157,7 +157,13 @@ func (c *SendCmd) resolveTarget(client *slack.Client) (channel, label string, er
 		return ch, c.Email, nil
 	}
 
-	return c.Channel, "#" + c.Channel, nil
+	// Resolve channel name to ID so that private channels work
+	// even when the bot token cannot see them.
+	channelID, err := client.ResolveChannelID(c.Channel)
+	if err != nil {
+		return "", "", err
+	}
+	return channelID, "#" + c.Channel, nil
 }
 
 // resolvePostAt parses the --at or --after flags into a Unix timestamp.

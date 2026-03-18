@@ -238,23 +238,31 @@ func (c *ChannelOps) ListUnreadChannels() ([]Channel, error) {
 	return unread, nil
 }
 
-// allConversationTypes is the full set of channel types to request.
-var allConversationTypes = []string{"public_channel", "private_channel", "im", "mpim"}
-
-// publicOnlyTypes is a fallback when scopes for private/im/mpim are
-// missing.
-var publicOnlyTypes = []string{"public_channel"}
+// conversationTypeFallbacks defines progressively narrower type sets
+// to try when scopes are missing. Each entry is attempted in order
+// until one succeeds.
+var conversationTypeFallbacks = [][]string{
+	{"public_channel", "private_channel", "im", "mpim"},
+	{"public_channel", "private_channel"},
+	{"public_channel"},
+}
 
 // FetchUserChannels returns all conversations the authenticated user
-// belongs to, excluding archived channels. It requests all channel
-// types first; if the API returns missing_scope (e.g. groups:read
-// not granted), it retries with public channels only.
+// belongs to, excluding archived channels. It tries progressively
+// narrower type sets when the API returns missing_scope.
 func (c *ChannelOps) FetchUserChannels() ([]Channel, error) {
-	channels, err := c.fetchUserChannelsWithTypes(allConversationTypes)
-	if err != nil && isMissingScopeError(err) {
-		return c.fetchUserChannelsWithTypes(publicOnlyTypes)
+	var lastErr error
+	for _, types := range conversationTypeFallbacks {
+		channels, err := c.fetchUserChannelsWithTypes(types)
+		if err == nil {
+			return channels, nil
+		}
+		lastErr = err
+		if !isMissingScopeError(err) {
+			return nil, err
+		}
 	}
-	return channels, err
+	return nil, lastErr
 }
 
 func (c *ChannelOps) fetchUserChannelsWithTypes(types []string) ([]Channel, error) {

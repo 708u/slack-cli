@@ -42,12 +42,12 @@ func (c *UploadCmd) Run() error {
 		}
 	}
 
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	opts := slack.UploadFileOptions{
 		Channel:        c.Channel,
 		FilePath:       c.File,

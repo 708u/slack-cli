@@ -39,7 +39,7 @@ func (c *ReminderAddCmd) Validate() error {
 
 // Run executes the reminder add command.
 func (c *ReminderAddCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func (c *ReminderAddCmd) Run() error {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	reminder, err := client.AddReminder(c.Text, postAt)
 	if err != nil {
 		return err
@@ -68,12 +68,12 @@ type ReminderListCmd struct {
 
 // Run executes the reminder list command.
 func (c *ReminderListCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	reminders, err := client.ListReminders()
 	if err != nil {
 		return err
@@ -117,12 +117,12 @@ type ReminderDeleteCmd struct {
 
 // Run executes the reminder delete command.
 func (c *ReminderDeleteCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.DeleteReminder(c.ID); err != nil {
 		return err
 	}
@@ -139,12 +139,12 @@ type ReminderCompleteCmd struct {
 
 // Run executes the reminder complete command.
 func (c *ReminderCompleteCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.CompleteReminder(c.ID); err != nil {
 		return err
 	}

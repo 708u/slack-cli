@@ -24,12 +24,12 @@ type ReactionAddCmd struct {
 
 // Run executes the reaction add command.
 func (c *ReactionAddCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.AddReaction(c.Channel, c.Timestamp, c.Emoji); err != nil {
 		return err
 	}
@@ -48,12 +48,12 @@ type ReactionRemoveCmd struct {
 
 // Run executes the reaction remove command.
 func (c *ReactionRemoveCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.RemoveReaction(c.Channel, c.Timestamp, c.Emoji); err != nil {
 		return err
 	}

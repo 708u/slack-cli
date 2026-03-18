@@ -23,12 +23,12 @@ type UnreadCmd struct {
 
 // Run executes the unread command.
 func (c *UnreadCmd) Run() error {
-	token, err := config.GetConfigOrError(c.Profile)
+	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(token)
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	if c.Channel != "" {
 		return c.handleSpecificChannel(client)

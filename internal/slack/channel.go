@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -237,13 +238,30 @@ func (c *ChannelOps) ListUnreadChannels() ([]Channel, error) {
 	return unread, nil
 }
 
+// allConversationTypes is the full set of channel types to request.
+var allConversationTypes = []string{"public_channel", "private_channel", "im", "mpim"}
+
+// publicOnlyTypes is a fallback when scopes for private/im/mpim are
+// missing.
+var publicOnlyTypes = []string{"public_channel"}
+
 // FetchUserChannels returns all conversations the authenticated user
-// belongs to (public, private, IM, MPIM), excluding archived channels.
+// belongs to, excluding archived channels. It requests all channel
+// types first; if the API returns missing_scope (e.g. groups:read
+// not granted), it retries with public channels only.
 func (c *ChannelOps) FetchUserChannels() ([]Channel, error) {
+	channels, err := c.fetchUserChannelsWithTypes(allConversationTypes)
+	if err != nil && isMissingScopeError(err) {
+		return c.fetchUserChannelsWithTypes(publicOnlyTypes)
+	}
+	return channels, err
+}
+
+func (c *ChannelOps) fetchUserChannelsWithTypes(types []string) ([]Channel, error) {
 	var channels []Channel
 
 	params := &slackgo.GetConversationsForUserParameters{
-		Types:           []string{"public_channel", "private_channel", "im", "mpim"},
+		Types:           types,
 		ExcludeArchived: true,
 		Limit:           defaultFetchLimit,
 	}
@@ -251,7 +269,7 @@ func (c *ChannelOps) FetchUserChannels() ([]Channel, error) {
 	for {
 		slackChannels, nextCursor, err := c.api.GetConversationsForUser(params)
 		if err != nil {
-			return nil, fmt.Errorf("fetch user channels: %w", err)
+			return nil, err
 		}
 
 		for _, sc := range slackChannels {
@@ -265,6 +283,12 @@ func (c *ChannelOps) FetchUserChannels() ([]Channel, error) {
 	}
 
 	return channels, nil
+}
+
+// isMissingScopeError checks whether err is a Slack API missing_scope error.
+func isMissingScopeError(err error) bool {
+	var slackErr slackgo.SlackErrorResponse
+	return errors.As(err, &slackErr) && slackErr.Err == "missing_scope"
 }
 
 // getChannelLookupCache returns the cached channel list, fetching it on

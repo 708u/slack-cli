@@ -49,7 +49,7 @@ func (r *ReminderOps) AddReminder(text string, time int64) (*Reminder, error) {
 func (r *ReminderOps) ListReminders() ([]Reminder, error) {
 	rems, err := r.api.ListReminders()
 	if err != nil {
-		return nil, fmt.Errorf("list reminders: %w", err)
+		return nil, wrapSlackError("list reminders", err)
 	}
 
 	out := make([]Reminder, 0, len(rems))
@@ -68,7 +68,7 @@ func (r *ReminderOps) ListReminders() ([]Reminder, error) {
 // DeleteReminder deletes a reminder by its ID.
 func (r *ReminderOps) DeleteReminder(id string) error {
 	if err := r.api.DeleteReminder(id); err != nil {
-		return fmt.Errorf("delete reminder: %w", err)
+		return wrapSlackError("delete reminder", err)
 	}
 	return nil
 }
@@ -100,6 +100,9 @@ func (r *ReminderOps) CompleteReminder(id string) error {
 		return fmt.Errorf("complete reminder: decode response: %w", err)
 	}
 	if !result.OK {
+		if result.Error == "not_allowed_token_type" {
+			return fmt.Errorf("complete reminder: this command requires a User token (xoxp-), not a Bot token (xoxb-)")
+		}
 		return fmt.Errorf("complete reminder: %s", result.Error)
 	}
 	return nil

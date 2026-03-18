@@ -1,8 +1,6 @@
 package slack
 
 import (
-	"fmt"
-
 	slackgo "github.com/slack-go/slack"
 )
 
@@ -20,7 +18,7 @@ func newStarOps(api *slackgo.Client) *StarOps {
 func (s *StarOps) AddStar(channel, timestamp string) error {
 	ref := slackgo.NewRefToMessage(channel, timestamp)
 	if err := s.api.AddStar(channel, ref); err != nil {
-		return fmt.Errorf("add star: %w", err)
+		return wrapSlackError("add star", err)
 	}
 	return nil
 }
@@ -39,7 +37,7 @@ func (s *StarOps) ListStars(count int) (*StarListResult, error) {
 
 	items, _, err := s.api.ListStars(params)
 	if err != nil {
-		return nil, fmt.Errorf("list stars: %w", err)
+		return nil, wrapSlackError("list stars", err)
 	}
 
 	starred := make([]StarredItem, 0, len(items))
@@ -65,7 +63,7 @@ func (s *StarOps) ListStars(count int) (*StarListResult, error) {
 func (s *StarOps) RemoveStar(channel, timestamp string) error {
 	ref := slackgo.NewRefToMessage(channel, timestamp)
 	if err := s.api.RemoveStar(channel, ref); err != nil {
-		return fmt.Errorf("remove star: %w", err)
+		return wrapSlackError("remove star", err)
 	}
 	return nil
 }

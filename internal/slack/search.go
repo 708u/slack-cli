@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"sort"
 	"strconv"
 
@@ -42,7 +41,7 @@ func (s *SearchOps) SearchMessages(query string, opts SearchMessagesOptions) (*S
 
 	resp, err := s.api.SearchMessages(query, params)
 	if err != nil {
-		return nil, fmt.Errorf("search messages: %w", err)
+		return nil, wrapSlackError("search messages", err)
 	}
 
 	matches := make([]SearchMatch, 0, len(resp.Matches))
@@ -105,7 +104,7 @@ func (s *SearchOps) fetchSearchPage(query string, page, count int) (*slackgo.Sea
 
 	resp, err := s.api.SearchMessages(query, params)
 	if err != nil {
-		return nil, fmt.Errorf("search page %d: %w", page, err)
+		return nil, wrapSlackError("search messages", err)
 	}
 	return resp, nil
 }

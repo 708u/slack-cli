@@ -15,6 +15,7 @@ import (
 type ConfigCmd struct {
 	Set      ConfigSetCmd      `cmd:"" help:"Set API token"`
 	Get      ConfigGetCmd      `cmd:"" help:"Show current configuration"`
+	Test     ConfigTestCmd     `cmd:"" help:"Test token and show granted scopes"`
 	Profiles ConfigProfilesCmd `cmd:"" help:"List all profiles"`
 	Use      ConfigUseCmd      `cmd:"" help:"Switch to a different profile"`
 	Current  ConfigCurrentCmd  `cmd:"" help:"Show current active profile"`

@@ -20,8 +20,8 @@ slack-go/slack.
 
 ```txt
 main.go                 # kong.Parse(&cli) entrypoint
-cmd/                    # Kong command structs, each has Run() error
 internal/
+  cmd/                  # Kong command structs, each has Run() error
   config/               # Profile-based token management (AES-256-GCM)
   slack/                # Slack API wrapper
     client.go           # Facade: delegates to *Ops structs
@@ -36,7 +36,7 @@ internal/
 
 **Key patterns:**
 
-- Every `cmd/*.go` `Run()` calls
+- Every `internal/cmd/*.go` `Run()` calls
   `config.GetConfigOrError(profile)` then `slack.NewClient(token)`.
 - `slack.Client` is a thin facade; real logic lives in `*Ops` structs
   (`ChannelOps`, `MessageOps`, etc.) which hold `*slackgo.Client`.
@@ -62,8 +62,9 @@ to pass `ResolveChannelID` without triggering a name lookup.
 1. Add method to `*Ops` struct in `internal/slack/`
 2. Add delegation method to `client.go`
    (missing this causes a runtime error)
-3. Create Kong struct with `Run() error` in `cmd/<name>.go`
-4. Add field to `CLI` struct in `cmd/root.go`
+3. Create Kong struct with `Run() error` in
+   `internal/cmd/<name>.go`
+4. Add field to `CLI` struct in `internal/cmd/root.go`
 5. Add httptest mock test in `internal/slack/*_test.go`
 
 ## Config / Token

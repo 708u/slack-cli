@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/708u/slack-cli/cmd"
+	"github.com/708u/slack-cli/internal/cmd"
 	"github.com/alecthomas/kong"
 )
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/708u/slack-cli/internal/config"
 	"github.com/fatih/color"
+	"golang.org/x/term"
 )
 
 // ConfigCmd groups configuration subcommands.
@@ -95,19 +96,50 @@ func promptTokenInteractively() (string, error) {
 	}
 
 	fmt.Fprint(os.Stderr, "Slack API token: ")
-	scanner := bufio.NewScanner(os.Stdin)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
+
+	// Read one byte at a time, echo '*' for each character.
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		// Fallback: terminal doesn't support raw mode, read normally.
+		scanner := bufio.NewScanner(os.Stdin)
+		if !scanner.Scan() {
+			return "", fmt.Errorf("token input cancelled")
+		}
+		token := strings.TrimSpace(scanner.Text())
+		if token == "" {
+			return "", fmt.Errorf("token cannot be empty")
+		}
+		return token, nil
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	var buf []byte
+	b := make([]byte, 1)
+	for {
+		if _, err := os.Stdin.Read(b); err != nil {
 			return "", fmt.Errorf("failed to read token: %w", err)
 		}
-		return "", fmt.Errorf("token input cancelled")
+		switch b[0] {
+		case '\r', '\n':
+			fmt.Fprint(os.Stderr, "\r\n")
+			token := strings.TrimSpace(string(buf))
+			if token == "" {
+				return "", fmt.Errorf("token cannot be empty")
+			}
+			return token, nil
+		case 127, '\b': // backspace / delete
+			if len(buf) > 0 {
+				buf = buf[:len(buf)-1]
+				fmt.Fprint(os.Stderr, "\b \b")
+			}
+		case 3: // ctrl-c
+			fmt.Fprint(os.Stderr, "\r\n")
+			return "", fmt.Errorf("token input cancelled")
+		default:
+			buf = append(buf, b[0])
+			fmt.Fprint(os.Stderr, "*")
+		}
 	}
-
-	token := strings.TrimSpace(scanner.Text())
-	if token == "" {
-		return "", fmt.Errorf("token cannot be empty")
-	}
-	return token, nil
 }
 
 // resolveProfileName returns the effective profile name for display purposes.

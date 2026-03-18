@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	defaultChannelsLimit         = 1000
 	defaultFetchLimit            = 200
 	defaultMembersLimit          = 100
 	unreadScanConcurrentRequests = 15
@@ -278,11 +277,10 @@ func (c *ChannelOps) getChannelLookupCache() ([]Channel, error) {
 		return c.channelCache, nil
 	}
 
-	channels, err := c.ListChannels(ListChannelsOptions{
-		Types:           "public_channel,private_channel,im,mpim",
-		ExcludeArchived: true,
-		Limit:           defaultChannelsLimit,
-	})
+	// Use users.conversations instead of conversations.list so that
+	// private channels the bot has joined are visible without the
+	// groups:read scope.
+	channels, err := c.FetchUserChannels()
 	if err != nil {
 		return nil, err
 	}

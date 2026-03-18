@@ -34,7 +34,12 @@ func (c *ChannelsCmd) Run() error {
 		Limit:           c.Limit,
 	})
 	if err != nil {
-		return err
+		// Fallback to users.conversations when conversations.list
+		// fails due to missing scopes (e.g. groups:read for private).
+		channels, err = client.FetchUserChannels()
+		if err != nil {
+			return err
+		}
 	}
 
 	if len(channels) == 0 {

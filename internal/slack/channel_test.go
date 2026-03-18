@@ -119,7 +119,8 @@ func TestResolveChannelID_AlreadyID(t *testing.T) {
 
 func TestResolveChannelID_ByName(t *testing.T) {
 	mock := newMockSlack(t)
-	mock.handleJSON("conversations.list", slackResponse{
+	// ResolveChannelID uses users.conversations (FetchUserChannels)
+	mock.handleJSON("users.conversations", slackResponse{
 		"ok": true,
 		"channels": []any{
 			slackChannel("CTEST00001", "general"),
@@ -140,7 +141,7 @@ func TestResolveChannelID_ByName(t *testing.T) {
 
 func TestResolveChannelID_NotFound(t *testing.T) {
 	mock := newMockSlack(t)
-	mock.handleJSON("conversations.list", slackResponse{
+	mock.handleJSON("users.conversations", slackResponse{
 		"ok":                true,
 		"channels":          []any{slackChannel("CTEST00001", "general")},
 		"response_metadata": map[string]any{"next_cursor": ""},

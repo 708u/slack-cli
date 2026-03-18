@@ -1,0 +1,15 @@
+{
+  "name": "708u-slack-cli",
+  "owner": {
+    "name": "708u",
+    "url": "https://github.com/708u"
+  },
+  "plugins": [
+    {
+      "name": "slack-cli",
+      "source": ".",
+      "description": "Claude Code plugin for the slack-cli tool. Provides command reference and usage guidance for all slack-cli operations.",
+      "version": "0.1.0"
+    }
+  ]
+}

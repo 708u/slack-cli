@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "slack-cli",
-      "source": ".",
+      "source": "./",
       "description": "Claude Code plugin for the slack-cli tool. Provides command reference and usage guidance for all slack-cli operations.",
       "version": "0.1.0"
     }

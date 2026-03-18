@@ -1,0 +1,13 @@
+{
+  "name": "slack-cli",
+  "version": "0.1.0",
+  "description": "Claude Code plugin for the slack-cli tool. Provides command reference and usage guidance for all slack-cli operations.",
+  "author": {
+    "name": "708u",
+    "url": "https://github.com/708u"
+  },
+  "repository": "https://github.com/708u/slack-cli",
+  "license": "MIT",
+  "keywords": ["slack", "cli", "slack-cli", "messaging"],
+  "skills": "./skills/"
+}

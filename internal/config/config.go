@@ -1,0 +1,389 @@
+package config
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"time"
+)
+
+const (
+	tokenMaskLength    = 4
+	tokenMinLength     = 9
+	defaultProfileName = "default"
+	dirPermission      = 0700
+	filePermission     = 0600
+	configFileName     = "config.json"
+)
+
+// Config holds the token and metadata for a single profile.
+type Config struct {
+	Token     string `json:"token"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+// Profile represents a named configuration profile.
+type Profile struct {
+	Name      string
+	Config    Config
+	IsDefault bool
+}
+
+// ConfigStore is the on-disk JSON structure for all profiles.
+type ConfigStore struct {
+	Profiles       map[string]Config `json:"profiles"`
+	DefaultProfile string            `json:"defaultProfile,omitempty"`
+}
+
+// ConfigurationError represents a configuration-related error.
+type ConfigurationError struct {
+	Msg string
+}
+
+func (e *ConfigurationError) Error() string { return e.Msg }
+
+// ValidationError represents a validation-related error.
+type ValidationError struct {
+	Msg string
+}
+
+func (e *ValidationError) Error() string { return e.Msg }
+
+// Option configures a ProfileConfigManager.
+type Option func(*ProfileConfigManager)
+
+// WithConfigDir sets the configuration directory.
+func WithConfigDir(dir string) Option {
+	return func(m *ProfileConfigManager) {
+		m.configPath = filepath.Join(dir, configFileName)
+	}
+}
+
+// WithCryptoService injects a custom TokenCryptoService.
+func WithCryptoService(cs *TokenCryptoService) Option {
+	return func(m *ProfileConfigManager) {
+		m.cryptoService = cs
+	}
+}
+
+// ProfileConfigManager manages profile-based configuration stored on disk.
+type ProfileConfigManager struct {
+	configPath    string
+	cryptoService *TokenCryptoService
+}
+
+// NewProfileConfigManager creates a new manager with the given options.
+// Default configDir is ~/.slack-cli.
+func NewProfileConfigManager(opts ...Option) *ProfileConfigManager {
+	home, _ := os.UserHomeDir()
+	m := &ProfileConfigManager{
+		configPath:    filepath.Join(home, defaultConfigDirName, configFileName),
+		cryptoService: NewTokenCryptoService(),
+	}
+	for _, o := range opts {
+		o(m)
+	}
+	return m
+}
+
+// SetToken encrypts and saves a token for the given profile.
+// If profile is empty, the current default profile is used.
+func (m *ProfileConfigManager) SetToken(token, profile string) error {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return err
+	}
+
+	profileName := profile
+	if profileName == "" {
+		profileName = store.DefaultProfile
+	}
+	if profileName == "" {
+		profileName = defaultProfileName
+	}
+
+	encrypted, err := m.cryptoService.Encrypt(token)
+	if err != nil {
+		return err
+	}
+
+	store.Profiles[profileName] = Config{
+		Token:     encrypted,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	if store.DefaultProfile == "" || profileName == defaultProfileName {
+		store.DefaultProfile = profileName
+	}
+
+	return m.saveConfigStore(store)
+}
+
+// GetConfig returns the decrypted configuration for the given profile.
+// Returns nil, nil if the profile does not exist.
+func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return nil, err
+	}
+
+	profileName := profile
+	if profileName == "" {
+		profileName = store.DefaultProfile
+	}
+	if profileName == "" {
+		profileName = defaultProfileName
+	}
+
+	cfg, ok := store.Profiles[profileName]
+	if !ok {
+		return nil, nil
+	}
+
+	decrypted := m.decryptToken(cfg.Token)
+
+	// Re-encrypt if not in current format and persist.
+	if !m.cryptoService.IsCurrentFormat(cfg.Token) {
+		encrypted, err := m.cryptoService.Encrypt(decrypted)
+		if err != nil {
+			return nil, err
+		}
+		store.Profiles[profileName] = Config{
+			Token:     encrypted,
+			UpdatedAt: cfg.UpdatedAt,
+		}
+		if err := m.saveConfigStore(store); err != nil {
+			return nil, err
+		}
+	}
+
+	return &Config{
+		Token:     decrypted,
+		UpdatedAt: cfg.UpdatedAt,
+	}, nil
+}
+
+// ListProfiles returns all profiles with their configs.
+func (m *ProfileConfigManager) ListProfiles() ([]Profile, error) {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return nil, err
+	}
+
+	currentProfile := store.DefaultProfile
+	if currentProfile == "" {
+		currentProfile = defaultProfileName
+	}
+
+	profiles := make([]Profile, 0, len(store.Profiles))
+	for name, cfg := range store.Profiles {
+		profiles = append(profiles, Profile{
+			Name:      name,
+			Config:    cfg,
+			IsDefault: name == currentProfile,
+		})
+	}
+	return profiles, nil
+}
+
+// UseProfile switches the default profile. Returns an error if the profile
+// does not exist.
+func (m *ProfileConfigManager) UseProfile(profile string) error {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := store.Profiles[profile]; !ok {
+		return &ConfigurationError{
+			Msg: fmt.Sprintf("Profile %q does not exist", profile),
+		}
+	}
+
+	store.DefaultProfile = profile
+	return m.saveConfigStore(store)
+}
+
+// GetCurrentProfile returns the name of the current default profile.
+func (m *ProfileConfigManager) GetCurrentProfile() (string, error) {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return "", err
+	}
+	if store.DefaultProfile != "" {
+		return store.DefaultProfile, nil
+	}
+	return defaultProfileName, nil
+}
+
+// ClearConfig removes a profile. If the deleted profile was the default,
+// a remaining profile is promoted. If no profiles remain the config file
+// is deleted.
+func (m *ProfileConfigManager) ClearConfig(profile string) error {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return err
+	}
+
+	profileName := profile
+	if profileName == "" {
+		profileName = store.DefaultProfile
+	}
+	if profileName == "" {
+		profileName = defaultProfileName
+	}
+
+	delete(store.Profiles, profileName)
+
+	if store.DefaultProfile == profileName {
+		remaining := make([]string, 0, len(store.Profiles))
+		for k := range store.Profiles {
+			remaining = append(remaining, k)
+		}
+		if len(remaining) > 0 {
+			store.DefaultProfile = remaining[0]
+		} else {
+			// No profiles left; remove config file.
+			if err := os.Remove(m.configPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				return err
+			}
+			return nil
+		}
+	}
+
+	return m.saveConfigStore(store)
+}
+
+// MaskToken masks a token for display, showing only the first and last
+// few characters.
+func (m *ProfileConfigManager) MaskToken(token string) string {
+	if len(token) <= tokenMinLength {
+		return "****"
+	}
+	prefix := token[:tokenMaskLength]
+	suffix := token[len(token)-tokenMaskLength:]
+	return prefix + "-****-****-" + suffix
+}
+
+func (m *ProfileConfigManager) decryptToken(token string) string {
+	if m.cryptoService.IsEncrypted(token) {
+		decrypted, err := m.cryptoService.Decrypt(token)
+		if err != nil {
+			return token
+		}
+		return decrypted
+	}
+	return token
+}
+
+func (m *ProfileConfigManager) getConfigStore() (*ConfigStore, error) {
+	data, err := os.ReadFile(m.configPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return &ConfigStore{Profiles: make(map[string]Config)}, nil
+		}
+		return nil, err
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, &ConfigurationError{Msg: "Invalid config file format"}
+	}
+
+	// Check if migration is needed (old format has "token" but no "profiles").
+	if m.needsMigration(raw) {
+		return m.migrateOldConfig(data)
+	}
+
+	var store ConfigStore
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, &ConfigurationError{Msg: "Invalid config file format"}
+	}
+	if store.Profiles == nil {
+		store.Profiles = make(map[string]Config)
+	}
+	return &store, nil
+}
+
+func (m *ProfileConfigManager) needsMigration(raw map[string]json.RawMessage) bool {
+	_, hasToken := raw["token"]
+	_, hasProfiles := raw["profiles"]
+	return hasToken && !hasProfiles
+}
+
+func (m *ProfileConfigManager) migrateOldConfig(data []byte) (*ConfigStore, error) {
+	var old struct {
+		Token     string `json:"token"`
+		UpdatedAt string `json:"updatedAt"`
+	}
+	if err := json.Unmarshal(data, &old); err != nil {
+		return nil, &ConfigurationError{Msg: "Invalid config file format"}
+	}
+
+	plainToken := old.Token
+	if m.cryptoService.IsEncrypted(old.Token) {
+		decrypted, err := m.cryptoService.Decrypt(old.Token)
+		if err != nil {
+			return nil, err
+		}
+		plainToken = decrypted
+	}
+
+	encrypted, err := m.cryptoService.Encrypt(plainToken)
+	if err != nil {
+		return nil, err
+	}
+
+	newStore := &ConfigStore{
+		Profiles: map[string]Config{
+			defaultProfileName: {
+				Token:     encrypted,
+				UpdatedAt: old.UpdatedAt,
+			},
+		},
+		DefaultProfile: defaultProfileName,
+	}
+
+	if err := m.saveConfigStore(newStore); err != nil {
+		return nil, err
+	}
+	return newStore, nil
+}
+
+func (m *ProfileConfigManager) saveConfigStore(store *ConfigStore) error {
+	configDir := filepath.Dir(m.configPath)
+	if err := os.MkdirAll(configDir, dirPermission); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	payload, err := json.MarshalIndent(store, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Atomic write: write to temp file, then rename.
+	tempPath := fmt.Sprintf("%s.%d.%d.tmp", m.configPath, os.Getpid(), time.Now().UnixNano())
+	f, err := os.OpenFile(tempPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, filePermission)
+	if err != nil {
+		return fmt.Errorf("failed to create temp config file: %w", err)
+	}
+
+	if _, err := f.Write(payload); err != nil {
+		f.Close()
+		os.Remove(tempPath)
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(tempPath)
+		return fmt.Errorf("failed to close temp config file: %w", err)
+	}
+
+	if err := os.Rename(tempPath, m.configPath); err != nil {
+		os.Remove(tempPath)
+		return fmt.Errorf("failed to rename temp config file: %w", err)
+	}
+	return nil
+}

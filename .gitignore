@@ -1,5 +1,5 @@
 # Binaries
-slack-cli
+/out/
 *.exe
 
 # Go

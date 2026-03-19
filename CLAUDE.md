@@ -6,11 +6,11 @@ when working with code in this repository.
 ## Build and Test
 
 ```bash
-go build ./...
-go test ./... -count=1
+make build                                         # out/slack-cli
+make test                                          # go test ./...
 go test ./internal/slack/ -run TestSendMessage -v  # single test
-go vet ./...
-go run . --help
+make vet                                           # go vet ./...
+go run ./cmd/slack-cli --help
 ```
 
 ## Architecture
@@ -19,7 +19,7 @@ Go CLI for Slack, built with Kong (struct-tag driven) and
 slack-go/slack.
 
 ```txt
-main.go                 # kong.Parse(&cli) entrypoint
+cmd/slack-cli/main.go   # kong.Parse(&cli) entrypoint
 internal/
   cmd/                  # Kong command structs, each has Run() error
   config/               # Profile-based token management (AES-256-GCM)

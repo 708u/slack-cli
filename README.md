@@ -5,7 +5,7 @@ Go CLI tool for interacting with the Slack API.
 ## Install
 
 ```bash
-go install github.com/708u/slack-cli@latest
+go install github.com/708u/slack-cli/cmd/slack-cli@latest
 ```
 
 Or build from source:
@@ -13,7 +13,8 @@ Or build from source:
 ```bash
 git clone https://github.com/708u/slack-cli.git
 cd slack-cli
-go build -o slack-cli .
+make build    # out/slack-cli
+make install  # $GOPATH/bin/slack-cli
 ```
 
 ## Setup

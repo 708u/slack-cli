@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/708u/slack-cli/internal/util"
 	slackgo "github.com/slack-go/slack"
 )
 
@@ -110,6 +111,17 @@ func (u *UserOps) ResolveUserIDByName(username string) (string, error) {
 	}
 
 	return "", fmt.Errorf("user '%s' not found", name)
+}
+
+// ResolveUserID accepts a username or user ID and returns the user ID.
+// If the input already looks like a user ID (U/W prefix), it is returned
+// immediately without an API call. Otherwise it falls through to
+// ResolveUserIDByName.
+func (u *UserOps) ResolveUserID(nameOrID string) (string, error) {
+	if util.IsUserID(nameOrID) {
+		return nameOrID, nil
+	}
+	return u.ResolveUserIDByName(nameOrID)
 }
 
 // userFromSlack converts a slack-go User to the internal SlackUser type.

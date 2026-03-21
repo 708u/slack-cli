@@ -18,7 +18,7 @@ var threadTSPattern = regexp.MustCompile(`^\d{10}\.\d{6}$`)
 // SendCmd sends or schedules a message to a Slack channel or DM.
 type SendCmd struct {
 	Channel string `name:"channel" short:"c" help:"Target channel name or ID" optional:""`
-	User    string `name:"user" help:"Send DM by username" optional:""`
+	User    string `name:"user" help:"Send DM by username or user ID" optional:""`
 	Email   string `name:"email" help:"Send DM by email address" optional:""`
 	Message string `name:"message" short:"m" help:"Message text" optional:""`
 	File    string `name:"file" short:"f" help:"File containing message content" optional:""`
@@ -134,7 +134,7 @@ func (c *SendCmd) resolveMessage() (string, error) {
 
 func (c *SendCmd) resolveTarget(client *slack.Client) (channel, label string, err error) {
 	if c.User != "" {
-		userID, err := client.ResolveUserIDByName(c.User)
+		userID, err := client.ResolveUserID(c.User)
 		if err != nil {
 			return "", "", err
 		}

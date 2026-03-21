@@ -141,6 +141,55 @@ func TestResolveUserIDByName_NotFound(t *testing.T) {
 	}
 }
 
+func TestResolveUserID_AlreadyID(t *testing.T) {
+	// No mock handlers needed — if the ID pattern matches, no API call
+	// should be made. A call to users.list would panic on missing handler.
+	mock := newMockSlack(t)
+	client := mock.newTestClient()
+
+	id, err := client.ResolveUserID("U0123456789")
+	if err != nil {
+		t.Fatalf("ResolveUserID: %v", err)
+	}
+	if id != "U0123456789" {
+		t.Errorf("expected U0123456789, got %s", id)
+	}
+}
+
+func TestResolveUserID_EnterpriseGrid(t *testing.T) {
+	mock := newMockSlack(t)
+	client := mock.newTestClient()
+
+	id, err := client.ResolveUserID("W0123456789")
+	if err != nil {
+		t.Fatalf("ResolveUserID: %v", err)
+	}
+	if id != "W0123456789" {
+		t.Errorf("expected W0123456789, got %s", id)
+	}
+}
+
+func TestResolveUserID_ByName(t *testing.T) {
+	mock := newMockSlack(t)
+	mock.handleJSON("users.list", slackResponse{
+		"ok": true,
+		"members": []any{
+			slackUser("U001", "alice", "Alice Smith", "alice@example.com"),
+			slackUser("U002", "bob", "Bob Jones", "bob@example.com"),
+		},
+		"response_metadata": map[string]any{"next_cursor": ""},
+	})
+
+	client := mock.newTestClient()
+	id, err := client.ResolveUserID("@bob")
+	if err != nil {
+		t.Fatalf("ResolveUserID: %v", err)
+	}
+	if id != "U002" {
+		t.Errorf("expected U002, got %s", id)
+	}
+}
+
 func TestListUsers_WithLimit(t *testing.T) {
 	mock := newMockSlack(t)
 	mock.handle("users.list", func(w http.ResponseWriter, r *http.Request) {

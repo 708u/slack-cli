@@ -78,6 +78,7 @@ Send or schedule a message to a channel or DM.
 ```bash
 slack-cli send -c general -m "hello"
 slack-cli send --user alice -m "hey"
+slack-cli send --user-id U0123456789 -m "hey"
 slack-cli send --email alice@co.com -m "hi"
 slack-cli send -c general -f message.txt
 slack-cli send -c general -m "later" --at 2025-01-01T09:00:00
@@ -87,8 +88,9 @@ slack-cli send -c general -m "reply" -t 1234567890.123456
 
 | Flag | Short | Required | Description |
 |---|---|---|---|
-| `--channel` | `-c` | one of c/user/email | Channel name or ID |
+| `--channel` | `-c` | one of c/user/user-id/email | Channel name or ID |
 | `--user` | | | Send DM by username |
+| `--user-id` | | | Send DM by user ID |
 | `--email` | | | Send DM by email |
 | `--message` | `-m` | m or f | Message text |
 | `--file` | `-f` | | File containing message |
@@ -114,13 +116,17 @@ slack-cli channels --type all --include-archived --format json
 
 ```bash
 slack-cli history -c general
+slack-cli history --user alice
+slack-cli history --user-id U0123456789
 slack-cli history -c general -n 50 --since "2025-01-01 00:00:00"
 slack-cli history -c general -t 1234567890.123456 --with-link
 ```
 
 | Flag | Short | Default | Description |
 |---|---|---|---|
-| `--channel` | `-c` | *required* | Channel name or ID |
+| `--channel` | `-c` | one of c/user/user-id | Channel name or ID |
+| `--user` | `-u` | | Show DM history by username |
+| `--user-id` | | | Show DM history by user ID |
 | `--number` | `-n` | 10 | Number of messages |
 | `--since` | | | Date filter (YYYY-MM-DD HH:MM:SS) |
 | `--thread` | `-t` | | Thread timestamp |
@@ -185,12 +191,15 @@ slack-cli delete -c general --ts 1234567890.123456
 
 ```bash
 slack-cli upload -c general -f report.pdf --title "Q4 Report"
+slack-cli upload --user-id U0123456789 -f report.pdf
 slack-cli upload -c general --content "print('hello')" --filetype python
 ```
 
 | Flag | Short | Description |
 |---|---|---|
-| `--channel` | `-c` | *required* Channel name or ID |
+| `--channel` | `-c` | Channel name or ID (one of c/user/user-id) |
+| `--user` | `-u` | Upload to DM by username |
+| `--user-id` | | Upload to DM by user ID |
 | `--file` | `-f` | File path (one of file/content required) |
 | `--content` | | Text content as snippet |
 | `--filename` | | Override filename |

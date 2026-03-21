@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/708u/slack-cli/internal/config"
@@ -11,9 +12,11 @@ import (
 	"github.com/708u/slack-cli/internal/util"
 )
 
-// HistoryCmd retrieves message history from a Slack channel.
+// HistoryCmd retrieves message history from a Slack channel or DM.
 type HistoryCmd struct {
-	Channel  string `name:"channel" short:"c" help:"Channel name or ID" required:""`
+	Channel  string `name:"channel" short:"c" help:"Channel name or ID" optional:""`
+	User     string `name:"user" short:"u" help:"Show DM history by username" optional:""`
+	UserID   string `name:"user-id" help:"Show DM history by user ID" optional:""`
 	Number   int    `name:"number" short:"n" help:"Number of messages" default:"10"`
 	Since    string `name:"since" help:"Messages since date (YYYY-MM-DD HH:MM:SS)" optional:""`
 	Thread   string `name:"thread" short:"t" help:"Thread timestamp" optional:""`
@@ -24,12 +27,34 @@ type HistoryCmd struct {
 
 // Run executes the history command.
 func (c *HistoryCmd) Run() error {
+	targets := 0
+	if c.Channel != "" {
+		targets++
+	}
+	if c.User != "" {
+		targets++
+	}
+	if c.UserID != "" {
+		targets++
+	}
+	if targets == 0 {
+		return fmt.Errorf("you must specify one of: --channel, --user, or --user-id")
+	}
+	if targets > 1 {
+		return fmt.Errorf("--channel, --user, and --user-id are mutually exclusive")
+	}
+
 	tokens, err := config.GetConfigOrError(c.Profile)
 	if err != nil {
 		return err
 	}
 
 	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+
+	channelID, displayName, err := c.resolveTarget(client)
+	if err != nil {
+		return err
+	}
 
 	var result *slack.HistoryResult
 
@@ -40,7 +65,7 @@ func (c *HistoryCmd) Run() error {
 		if c.Since != "" {
 			fmt.Println("Warning: --since is ignored when --thread is specified.")
 		}
-		result, err = client.GetThreadHistory(c.Channel, c.Thread)
+		result, err = client.GetThreadHistory(channelID, c.Thread)
 	} else {
 		opts := slack.HistoryOptions{
 			Limit: c.Number,
@@ -54,7 +79,7 @@ func (c *HistoryCmd) Run() error {
 			opts.Oldest = oldest
 		}
 
-		result, err = client.GetHistory(c.Channel, opts)
+		result, err = client.GetHistory(channelID, opts)
 	}
 	if err != nil {
 		return err
@@ -73,7 +98,7 @@ func (c *HistoryCmd) Run() error {
 		for i, m := range messages {
 			timestamps[i] = m.TS
 		}
-		permalinks, _ = client.GetPermalinks(c.Channel, timestamps)
+		permalinks, _ = client.GetPermalinks(channelID, timestamps)
 	}
 
 	infos := make([]format.MessageInfo, len(messages))
@@ -97,11 +122,37 @@ func (c *HistoryCmd) Run() error {
 
 	f := format.ParseFormat(c.Format)
 	format.FormatHistory(format.HistoryFormatOpts{
-		ChannelName: c.Channel,
+		ChannelName: displayName,
 		Messages:    infos,
 	}, f)
 
 	return nil
+}
+
+func (c *HistoryCmd) resolveTarget(client *slack.Client) (channelID, displayName string, err error) {
+	if c.User != "" {
+		userID, err := client.ResolveUserIDByName(c.User)
+		if err != nil {
+			return "", "", err
+		}
+		ch, err := client.OpenDMChannel(userID)
+		if err != nil {
+			return "", "", err
+		}
+		return ch, "@" + strings.TrimPrefix(c.User, "@"), nil
+	}
+	if c.UserID != "" {
+		ch, err := client.OpenDMChannel(c.UserID)
+		if err != nil {
+			return "", "", err
+		}
+		return ch, c.UserID, nil
+	}
+	ch, err := client.ResolveChannelID(c.Channel)
+	if err != nil {
+		return "", "", err
+	}
+	return ch, c.Channel, nil
 }
 
 // prepareSinceTimestamp converts a date string (YYYY-MM-DD HH:MM:SS) to

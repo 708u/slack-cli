@@ -85,7 +85,7 @@ func testToken(token string) error {
 	fmt.Printf("  User:        %s\n", result.User)
 	if scopes != "" {
 		fmt.Println("  Granted scopes:")
-		for _, s := range strings.Split(scopes, ",") {
+		for s := range strings.SplitSeq(scopes, ",") {
 			fmt.Printf("    - %s\n", strings.TrimSpace(s))
 		}
 	}

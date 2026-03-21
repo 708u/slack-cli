@@ -18,7 +18,8 @@ var threadTSPattern = regexp.MustCompile(`^\d{10}\.\d{6}$`)
 // SendCmd sends or schedules a message to a Slack channel or DM.
 type SendCmd struct {
 	Channel string `name:"channel" short:"c" help:"Target channel name or ID" optional:""`
-	User    string `name:"user" help:"Send DM by username or user ID" optional:""`
+	User    string `name:"user" help:"Send DM by username" optional:""`
+	UserID  string `name:"user-id" help:"Send DM by user ID" optional:""`
 	Email   string `name:"email" help:"Send DM by email address" optional:""`
 	Message string `name:"message" short:"m" help:"Message text" optional:""`
 	File    string `name:"file" short:"f" help:"File containing message content" optional:""`
@@ -69,7 +70,7 @@ func (c *SendCmd) Run() error {
 		return err
 	}
 
-	if c.User != "" || c.Email != "" {
+	if c.User != "" || c.UserID != "" || c.Email != "" {
 		fmt.Println(color.GreenString("DM sent to %s", targetLabel))
 	} else {
 		fmt.Println(color.GreenString("Message sent successfully to #%s", c.Channel))
@@ -86,18 +87,18 @@ func (c *SendCmd) validate() error {
 	if c.User != "" {
 		targets++
 	}
+	if c.UserID != "" {
+		targets++
+	}
 	if c.Email != "" {
 		targets++
 	}
 
 	if targets == 0 {
-		return fmt.Errorf("you must specify one of: --channel, --user, or --email")
+		return fmt.Errorf("you must specify one of: --channel, --user, --user-id, or --email")
 	}
-	if c.Channel != "" && (c.User != "" || c.Email != "") {
-		return fmt.Errorf("cannot use --channel with --user or --email")
-	}
-	if c.User != "" && c.Email != "" {
-		return fmt.Errorf("cannot use --user and --email together")
+	if targets > 1 {
+		return fmt.Errorf("--channel, --user, --user-id, and --email are mutually exclusive")
 	}
 
 	// Exactly one message source is required.
@@ -134,7 +135,7 @@ func (c *SendCmd) resolveMessage() (string, error) {
 
 func (c *SendCmd) resolveTarget(client *slack.Client) (channel, label string, err error) {
 	if c.User != "" {
-		userID, err := client.ResolveUserID(c.User)
+		userID, err := client.ResolveUserIDByName(c.User)
 		if err != nil {
 			return "", "", err
 		}
@@ -143,6 +144,14 @@ func (c *SendCmd) resolveTarget(client *slack.Client) (channel, label string, er
 			return "", "", err
 		}
 		return ch, "@" + strings.TrimPrefix(c.User, "@"), nil
+	}
+
+	if c.UserID != "" {
+		ch, err := client.OpenDMChannel(c.UserID)
+		if err != nil {
+			return "", "", err
+		}
+		return ch, c.UserID, nil
 	}
 
 	if c.Email != "" {

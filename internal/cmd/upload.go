@@ -14,7 +14,8 @@ import (
 // UploadCmd uploads a file or snippet to a Slack channel or DM.
 type UploadCmd struct {
 	Channel  string `name:"channel" short:"c" optional:"" help:"Channel name or ID"`
-	User     string `name:"user" short:"u" optional:"" help:"Upload to DM by username or user ID"`
+	User     string `name:"user" short:"u" optional:"" help:"Upload to DM by username"`
+	UserID   string `name:"user-id" optional:"" help:"Upload to DM by user ID"`
 	File     string `name:"file" short:"f" optional:"" help:"File path to upload"`
 	Content  string `name:"content" optional:"" help:"Text content to upload as snippet"`
 	Filename string `name:"filename" optional:"" help:"Override filename"`
@@ -28,11 +29,21 @@ type UploadCmd struct {
 // Validate checks that exactly one of --file or --content is provided
 // and that exactly one target (--channel or --user) is given.
 func (c *UploadCmd) Validate() error {
-	if c.Channel == "" && c.User == "" {
-		return errors.New("you must specify --channel or --user")
+	targets := 0
+	if c.Channel != "" {
+		targets++
 	}
-	if c.Channel != "" && c.User != "" {
-		return errors.New("cannot use --channel and --user together")
+	if c.User != "" {
+		targets++
+	}
+	if c.UserID != "" {
+		targets++
+	}
+	if targets == 0 {
+		return errors.New("you must specify one of: --channel, --user, or --user-id")
+	}
+	if targets > 1 {
+		return errors.New("--channel, --user, and --user-id are mutually exclusive")
 	}
 	if c.File == "" && c.Content == "" {
 		return errors.New("you must specify either --file or --content")
@@ -84,7 +95,7 @@ func (c *UploadCmd) Run() error {
 
 func (c *UploadCmd) resolveTarget(client *slack.Client) (channelID, displayName string, err error) {
 	if c.User != "" {
-		userID, err := client.ResolveUserID(c.User)
+		userID, err := client.ResolveUserIDByName(c.User)
 		if err != nil {
 			return "", "", err
 		}
@@ -93,6 +104,13 @@ func (c *UploadCmd) resolveTarget(client *slack.Client) (channelID, displayName 
 			return "", "", err
 		}
 		return ch, "@" + strings.TrimPrefix(c.User, "@"), nil
+	}
+	if c.UserID != "" {
+		ch, err := client.OpenDMChannel(c.UserID)
+		if err != nil {
+			return "", "", err
+		}
+		return ch, c.UserID, nil
 	}
 	ch, err := client.ResolveChannelID(c.Channel)
 	if err != nil {

@@ -15,7 +15,8 @@ import (
 // HistoryCmd retrieves message history from a Slack channel or DM.
 type HistoryCmd struct {
 	Channel  string `name:"channel" short:"c" help:"Channel name or ID" optional:""`
-	User     string `name:"user" short:"u" help:"Show DM history by username or user ID" optional:""`
+	User     string `name:"user" short:"u" help:"Show DM history by username" optional:""`
+	UserID   string `name:"user-id" help:"Show DM history by user ID" optional:""`
 	Number   int    `name:"number" short:"n" help:"Number of messages" default:"10"`
 	Since    string `name:"since" help:"Messages since date (YYYY-MM-DD HH:MM:SS)" optional:""`
 	Thread   string `name:"thread" short:"t" help:"Thread timestamp" optional:""`
@@ -26,11 +27,21 @@ type HistoryCmd struct {
 
 // Run executes the history command.
 func (c *HistoryCmd) Run() error {
-	if c.Channel == "" && c.User == "" {
-		return fmt.Errorf("you must specify --channel or --user")
+	targets := 0
+	if c.Channel != "" {
+		targets++
 	}
-	if c.Channel != "" && c.User != "" {
-		return fmt.Errorf("cannot use --channel and --user together")
+	if c.User != "" {
+		targets++
+	}
+	if c.UserID != "" {
+		targets++
+	}
+	if targets == 0 {
+		return fmt.Errorf("you must specify one of: --channel, --user, or --user-id")
+	}
+	if targets > 1 {
+		return fmt.Errorf("--channel, --user, and --user-id are mutually exclusive")
 	}
 
 	tokens, err := config.GetConfigOrError(c.Profile)
@@ -120,7 +131,7 @@ func (c *HistoryCmd) Run() error {
 
 func (c *HistoryCmd) resolveTarget(client *slack.Client) (channelID, displayName string, err error) {
 	if c.User != "" {
-		userID, err := client.ResolveUserID(c.User)
+		userID, err := client.ResolveUserIDByName(c.User)
 		if err != nil {
 			return "", "", err
 		}
@@ -129,6 +140,13 @@ func (c *HistoryCmd) resolveTarget(client *slack.Client) (channelID, displayName
 			return "", "", err
 		}
 		return ch, "@" + strings.TrimPrefix(c.User, "@"), nil
+	}
+	if c.UserID != "" {
+		ch, err := client.OpenDMChannel(c.UserID)
+		if err != nil {
+			return "", "", err
+		}
+		return ch, c.UserID, nil
 	}
 	ch, err := client.ResolveChannelID(c.Channel)
 	if err != nil {

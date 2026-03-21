@@ -267,10 +267,6 @@ func (c *Client) ResolveUserIDByName(username string) (string, error) {
 	return c.userOps.ResolveUserIDByName(username)
 }
 
-func (c *Client) ResolveUserID(nameOrID string) (string, error) {
-	return c.userOps.ResolveUserID(nameOrID)
-}
-
 // ---------------------------------------------------------------------------
 // Search operations
 // ---------------------------------------------------------------------------

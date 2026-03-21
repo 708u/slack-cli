@@ -25,7 +25,7 @@ func (c *InviteCmd) Run() error {
 	}
 
 	var userIDs []string
-	for _, id := range strings.Split(c.Users, ",") {
+	for id := range strings.SplitSeq(c.Users, ",") {
 		id = strings.TrimSpace(id)
 		if id != "" {
 			userIDs = append(userIDs, id)

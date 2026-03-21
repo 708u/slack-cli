@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
@@ -133,14 +134,14 @@ func (c *CanvasListCmd) Run() error {
 
 // extractCanvasText recursively extracts text from canvas section elements.
 func extractCanvasText(elements []slack.CanvasSectionElement) string {
-	var result string
+	var result strings.Builder
 	for _, el := range elements {
 		if el.Text != "" {
-			result += el.Text
+			result.WriteString(el.Text)
 		}
 		if len(el.Elements) > 0 {
-			result += extractCanvasText(el.Elements)
+			result.WriteString(extractCanvasText(el.Elements))
 		}
 	}
-	return result
+	return result.String()
 }

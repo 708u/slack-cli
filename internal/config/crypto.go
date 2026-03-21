@@ -429,7 +429,7 @@ func (s *TokenCryptoService) decryptLegacyFormat(data string) (string, error) {
 	if padLen == 0 || padLen > aes.BlockSize || padLen > len(plaintext) {
 		return "", &ConfigurationError{Msg: "Failed to decrypt token"}
 	}
-	for i := 0; i < padLen; i++ {
+	for i := range padLen {
 		if plaintext[len(plaintext)-1-i] != byte(padLen) {
 			return "", &ConfigurationError{Msg: "Failed to decrypt token"}
 		}

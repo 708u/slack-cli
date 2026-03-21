@@ -212,7 +212,6 @@ func (c *ChannelOps) ListUnreadChannels() ([]Channel, error) {
 	var unread []Channel
 
 	for _, ch := range channels {
-		ch := ch
 		g.Go(func() error {
 			sem <- struct{}{}
 			defer func() { <-sem }()

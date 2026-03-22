@@ -12,16 +12,17 @@ type Client struct {
 	botAPI  *slackgo.Client
 	userAPI *slackgo.Client
 
-	channelOps  *ChannelOps
-	messageOps  *MessageOps
-	userOps     *UserOps
-	searchOps   *SearchOps
-	reactionOps *ReactionOps
-	pinOps      *PinOps
-	reminderOps *ReminderOps
-	starOps     *StarOps
-	fileOps     *FileOps
-	canvasOps   *CanvasOps
+	channelOps   *ChannelOps
+	messageOps   *MessageOps
+	userOps      *UserOps
+	searchOps    *SearchOps
+	reactionOps  *ReactionOps
+	pinOps       *PinOps
+	reminderOps  *ReminderOps
+	starOps      *StarOps
+	fileOps      *FileOps
+	canvasOps    *CanvasOps
+	userGroupOps *UserGroupOps
 }
 
 // NewClient creates a Client. botToken and userToken are both optional
@@ -64,6 +65,7 @@ func NewClient(botToken, userToken string) *Client {
 	c.starOps = newStarOps(userAPI)
 	c.fileOps = newFileOps(api, c.channelOps)
 	c.canvasOps = newCanvasOps(api, primary, c.channelOps)
+	c.userGroupOps = newUserGroupOps(api)
 
 	return c
 }
@@ -325,4 +327,16 @@ func (c *Client) ReadCanvas(canvasID string) ([]CanvasSection, error) {
 
 func (c *Client) ListCanvases(channel string) ([]CanvasFile, error) {
 	return c.canvasOps.ListCanvases(channel)
+}
+
+// ---------------------------------------------------------------------------
+// UserGroup operations
+// ---------------------------------------------------------------------------
+
+func (c *Client) SearchUsers(query string, limit int) ([]SlackUser, error) {
+	return c.userOps.SearchUsers(query, limit)
+}
+
+func (c *Client) ListUserGroups(opts ListUserGroupsOptions) ([]UserGroup, error) {
+	return c.userGroupOps.ListUserGroups(opts)
 }

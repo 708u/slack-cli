@@ -112,6 +112,38 @@ func (u *UserOps) ResolveUserIDByName(username string) (string, error) {
 	return "", fmt.Errorf("user '%s' not found", name)
 }
 
+// SearchUsers returns users whose RealName or DisplayName contains the query
+// (case-insensitive). It fetches all users via ListUsers(0) and filters
+// client-side, matching the approach used by ResolveUserIDByName.
+func (u *UserOps) SearchUsers(query string, limit int) ([]SlackUser, error) {
+	all, err := u.ListUsers(0)
+	if err != nil {
+		return nil, fmt.Errorf("search users: %w", err)
+	}
+
+	q := strings.ToLower(query)
+	var results []SlackUser
+	for _, user := range all {
+		if matchesUser(user, q) {
+			results = append(results, user)
+			if limit > 0 && len(results) >= limit {
+				break
+			}
+		}
+	}
+	return results, nil
+}
+
+func matchesUser(u SlackUser, query string) bool {
+	if strings.Contains(strings.ToLower(u.RealName), query) {
+		return true
+	}
+	if u.Profile != nil && strings.Contains(strings.ToLower(u.Profile.DisplayName), query) {
+		return true
+	}
+	return false
+}
+
 // userFromSlack converts a slack-go User to the internal SlackUser type.
 func userFromSlack(su slackgo.User) SlackUser {
 	return SlackUser{

@@ -8,11 +8,12 @@ import (
 
 // UserInfo holds the fields needed to display a user list row.
 type UserInfo struct {
-	ID       string
-	Name     string
-	RealName string
-	IsBot    bool
-	IsAdmin  bool
+	ID          string
+	Name        string
+	RealName    string
+	DisplayName string
+	IsBot       bool
+	IsAdmin     bool
 }
 
 // FormatUserList prints a list of users in the requested format.
@@ -20,34 +21,36 @@ func FormatUserList(users []UserInfo, f Format) {
 	switch f {
 	case JSON:
 		type jsonUser struct {
-			ID       string `json:"id"`
-			Name     string `json:"name"`
-			RealName string `json:"real_name"`
-			IsBot    bool   `json:"is_bot"`
-			IsAdmin  bool   `json:"is_admin"`
+			ID          string `json:"id"`
+			Name        string `json:"name"`
+			RealName    string `json:"real_name"`
+			DisplayName string `json:"display_name"`
+			IsBot       bool   `json:"is_bot"`
+			IsAdmin     bool   `json:"is_admin"`
 		}
 		out := make([]jsonUser, len(users))
 		for i, u := range users {
 			out[i] = jsonUser{
-				ID:       u.ID,
-				Name:     u.Name,
-				RealName: u.RealName,
-				IsBot:    u.IsBot,
-				IsAdmin:  u.IsAdmin,
+				ID:          u.ID,
+				Name:        u.Name,
+				RealName:    u.RealName,
+				DisplayName: u.DisplayName,
+				IsBot:       u.IsBot,
+				IsAdmin:     u.IsAdmin,
 			}
 		}
 		PrintJSON(out)
 	case Simple:
 		for _, u := range users {
-			fmt.Printf("%s\t%s\t%s\n", u.ID, u.Name, u.RealName)
+			fmt.Printf("%s\t%s\t%s\t%s\n", u.ID, u.Name, u.RealName, u.DisplayName)
 		}
 	default:
 		bold := color.New(color.Bold)
-		bold.Printf("%-12s%-20s%-20s%-6s%-6s\n", "ID", "Name", "Real Name", "Bot", "Admin")
-		fmt.Println(Separator(64))
+		bold.Printf("%-12s%-20s%-20s%-20s%-6s%-6s\n", "ID", "Name", "Real Name", "Display Name", "Bot", "Admin")
+		fmt.Println(Separator(84))
 		for _, u := range users {
-			fmt.Printf("%-12s%-20s%-20s%-6s%-6s\n",
-				u.ID, u.Name, u.RealName,
+			fmt.Printf("%-12s%-20s%-20s%-20s%-6s%-6s\n",
+				u.ID, u.Name, u.RealName, u.DisplayName,
 				boolYesNo(u.IsBot), boolYesNo(u.IsAdmin))
 		}
 	}

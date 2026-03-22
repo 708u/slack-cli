@@ -141,6 +141,103 @@ func TestResolveUserIDByName_NotFound(t *testing.T) {
 	}
 }
 
+func slackUserWithDisplayName(id, name, realName, displayName, email string) map[string]any {
+	u := slackUser(id, name, realName, email)
+	u["profile"].(map[string]any)["display_name"] = displayName
+	return u
+}
+
+func TestSearchUsers(t *testing.T) {
+	mock := newMockSlack(t)
+	mock.handleJSON("users.list", slackResponse{
+		"ok": true,
+		"members": []any{
+			slackUserWithDisplayName("U001", "alice", "Alice Smith", "alice.s", "alice@example.com"),
+			slackUserWithDisplayName("U002", "bob", "Bob Jones", "bobby", "bob@example.com"),
+			slackUserWithDisplayName("U003", "charlie", "Charlie Brown", "chuck", "charlie@example.com"),
+		},
+		"response_metadata": map[string]any{"next_cursor": ""},
+	})
+
+	client := mock.newTestClient()
+
+	// Match by real name
+	users, err := client.SearchUsers("alice", 50)
+	if err != nil {
+		t.Fatalf("SearchUsers: %v", err)
+	}
+	if len(users) != 1 {
+		t.Fatalf("expected 1 user, got %d", len(users))
+	}
+	if users[0].ID != "U001" {
+		t.Errorf("expected U001, got %s", users[0].ID)
+	}
+}
+
+func TestSearchUsers_ByDisplayName(t *testing.T) {
+	mock := newMockSlack(t)
+	mock.handleJSON("users.list", slackResponse{
+		"ok": true,
+		"members": []any{
+			slackUserWithDisplayName("U001", "alice", "Alice Smith", "alice.s", ""),
+			slackUserWithDisplayName("U002", "bob", "Bob Jones", "bobby", ""),
+		},
+		"response_metadata": map[string]any{"next_cursor": ""},
+	})
+
+	client := mock.newTestClient()
+	users, err := client.SearchUsers("bobby", 50)
+	if err != nil {
+		t.Fatalf("SearchUsers: %v", err)
+	}
+	if len(users) != 1 {
+		t.Fatalf("expected 1 user, got %d", len(users))
+	}
+	if users[0].ID != "U002" {
+		t.Errorf("expected U002, got %s", users[0].ID)
+	}
+}
+
+func TestSearchUsers_CaseInsensitive(t *testing.T) {
+	mock := newMockSlack(t)
+	mock.handleJSON("users.list", slackResponse{
+		"ok": true,
+		"members": []any{
+			slackUser("U001", "alice", "Alice Smith", ""),
+		},
+		"response_metadata": map[string]any{"next_cursor": ""},
+	})
+
+	client := mock.newTestClient()
+	users, err := client.SearchUsers("ALICE", 50)
+	if err != nil {
+		t.Fatalf("SearchUsers: %v", err)
+	}
+	if len(users) != 1 {
+		t.Fatalf("expected 1 user, got %d", len(users))
+	}
+}
+
+func TestSearchUsers_NoMatch(t *testing.T) {
+	mock := newMockSlack(t)
+	mock.handleJSON("users.list", slackResponse{
+		"ok": true,
+		"members": []any{
+			slackUser("U001", "alice", "Alice Smith", ""),
+		},
+		"response_metadata": map[string]any{"next_cursor": ""},
+	})
+
+	client := mock.newTestClient()
+	users, err := client.SearchUsers("nonexistent", 50)
+	if err != nil {
+		t.Fatalf("SearchUsers: %v", err)
+	}
+	if len(users) != 0 {
+		t.Fatalf("expected 0 users, got %d", len(users))
+	}
+}
+
 func TestListUsers_WithLimit(t *testing.T) {
 	mock := newMockSlack(t)
 	mock.handle("users.list", func(w http.ResponseWriter, r *http.Request) {

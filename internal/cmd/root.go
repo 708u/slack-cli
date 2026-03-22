@@ -30,6 +30,7 @@ type CLI struct {
 	Reminder      ReminderCmd      `cmd:"" help:"Create, list, delete, or complete reminders"`
 	Bookmark      BookmarkCmd      `cmd:"" help:"Manage saved items"`
 	Canvas        CanvasCmd        `cmd:"" help:"Manage Slack Canvases"`
+	Usergroups    UserGroupsCmd    `cmd:"" help:"Manage user groups"`
 
 	Version VersionFlag `name:"version" help:"Print version information"`
 }

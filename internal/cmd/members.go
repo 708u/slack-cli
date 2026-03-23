@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 )
@@ -13,17 +12,10 @@ type MembersCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Target channel name or ID"`
 	Limit   int    `name:"limit" default:"100" help:"Maximum number of members to list"`
 	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the members command.
-func (c *MembersCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *MembersCmd) Run(client *slack.Client) error {
 	result, err := client.GetChannelMembers(c.Channel, &slack.ChannelMembersOptions{
 		Limit: c.Limit,
 	})

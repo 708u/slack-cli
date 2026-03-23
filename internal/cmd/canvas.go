@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
@@ -18,19 +17,12 @@ type CanvasCmd struct {
 
 // CanvasReadCmd reads sections of a canvas.
 type CanvasReadCmd struct {
-	ID      string `name:"id" short:"i" required:"" help:"Canvas ID"`
-	Format  string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	ID     string `name:"id" short:"i" required:"" help:"Canvas ID"`
+	Format string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
 }
 
 // Run executes the canvas read command.
-func (c *CanvasReadCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *CanvasReadCmd) Run(client *slack.Client) error {
 	sections, err := client.ReadCanvas(c.ID)
 	if err != nil {
 		return err
@@ -78,17 +70,10 @@ func (c *CanvasReadCmd) Run() error {
 type CanvasListCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Format  string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the canvas list command.
-func (c *CanvasListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *CanvasListCmd) Run(client *slack.Client) error {
 	canvases, err := client.ListCanvases(c.Channel)
 	if err != nil {
 		return err

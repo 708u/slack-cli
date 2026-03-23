@@ -3,11 +3,15 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/708u/slack-cli/internal/config"
+	"github.com/708u/slack-cli/internal/slack"
 	"github.com/alecthomas/kong"
 )
 
 // CLI is the root Kong CLI struct. All subcommands are defined as fields.
 type CLI struct {
+	Profile string `name:"profile" help:"Workspace profile to use" optional:""`
+
 	Config        ConfigCmd        `cmd:"" help:"Manage Slack CLI configuration"`
 	Send          SendCmd          `cmd:"" help:"Send or schedule a message to a Slack channel or DM"`
 	Channels      ChannelsCmd      `cmd:"" help:"List Slack channels"`
@@ -33,6 +37,16 @@ type CLI struct {
 	Usergroups    UserGroupsCmd    `cmd:"" help:"Manage user groups"`
 
 	Version VersionFlag `name:"version" help:"Print version information"`
+}
+
+// ProvideSlackClient creates a *slack.Client from the global --profile flag.
+// Kong calls this provider only when a subcommand's Run() accepts *slack.Client.
+func (c *CLI) ProvideSlackClient() (*slack.Client, error) {
+	tokens, err := config.GetConfigOrError(c.Profile)
+	if err != nil {
+		return nil, err
+	}
+	return slack.NewClient(tokens.BotToken, tokens.UserToken), nil
 }
 
 // VersionFlag is a custom flag type for --version.

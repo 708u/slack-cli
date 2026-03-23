@@ -27,23 +27,22 @@ type ConfigCmd struct {
 type ConfigSetCmd struct {
 	Token      string `name:"token" help:"Slack API token (may leak via shell history)" optional:""`
 	TokenStdin bool   `name:"token-stdin" help:"Read token from stdin"`
-	Profile    string `name:"profile" help:"Profile name" optional:""`
 }
 
 // Run executes the config set command.
-func (c *ConfigSetCmd) Run() error {
+func (c *ConfigSetCmd) Run(cli *CLI) error {
 	token, err := c.resolveToken()
 	if err != nil {
 		return err
 	}
 
 	mgr := config.NewProfileConfigManager()
-	profileName, err := resolveProfileName(mgr, c.Profile)
+	profileName, err := resolveProfileName(mgr, cli.Profile)
 	if err != nil {
 		return err
 	}
 
-	kind, err := mgr.SetToken(token, c.Profile)
+	kind, err := mgr.SetToken(token, cli.Profile)
 	if err != nil {
 		return err
 	}
@@ -151,19 +150,17 @@ func resolveProfileName(mgr *config.ProfileConfigManager, profile string) (strin
 }
 
 // ConfigGetCmd shows the current configuration for a profile.
-type ConfigGetCmd struct {
-	Profile string `name:"profile" help:"Profile name" optional:""`
-}
+type ConfigGetCmd struct{}
 
 // Run executes the config get command.
-func (c *ConfigGetCmd) Run() error {
+func (c *ConfigGetCmd) Run(cli *CLI) error {
 	mgr := config.NewProfileConfigManager()
-	profileName, err := resolveProfileName(mgr, c.Profile)
+	profileName, err := resolveProfileName(mgr, cli.Profile)
 	if err != nil {
 		return err
 	}
 
-	cfg, err := mgr.GetConfig(c.Profile)
+	cfg, err := mgr.GetConfig(cli.Profile)
 	if err != nil {
 		return err
 	}
@@ -267,19 +264,17 @@ func (c *ConfigCurrentCmd) Run() error {
 }
 
 // ConfigClearCmd clears configuration for a profile.
-type ConfigClearCmd struct {
-	Profile string `name:"profile" help:"Profile name" optional:""`
-}
+type ConfigClearCmd struct{}
 
 // Run executes the config clear command.
-func (c *ConfigClearCmd) Run() error {
+func (c *ConfigClearCmd) Run(cli *CLI) error {
 	mgr := config.NewProfileConfigManager()
-	profileName, err := resolveProfileName(mgr, c.Profile)
+	profileName, err := resolveProfileName(mgr, cli.Profile)
 	if err != nil {
 		return err
 	}
 
-	if err := mgr.ClearConfig(c.Profile); err != nil {
+	if err := mgr.ClearConfig(cli.Profile); err != nil {
 		return err
 	}
 

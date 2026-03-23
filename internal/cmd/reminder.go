@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
@@ -21,10 +20,9 @@ type ReminderCmd struct {
 
 // ReminderAddCmd creates a new reminder.
 type ReminderAddCmd struct {
-	Text    string `name:"text" required:"" help:"The content of the reminder"`
-	At      string `name:"at" optional:"" help:"Absolute date/time (Unix timestamp or ISO8601)"`
-	After   string `name:"after" optional:"" help:"Minutes from now"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Text  string `name:"text" required:"" help:"The content of the reminder"`
+	At    string `name:"at" optional:"" help:"Absolute date/time (Unix timestamp or ISO8601)"`
+	After string `name:"after" optional:"" help:"Minutes from now"`
 }
 
 // Validate ensures exactly one of --at or --after is specified.
@@ -38,18 +36,12 @@ func (c *ReminderAddCmd) Validate() error {
 }
 
 // Run executes the reminder add command.
-func (c *ReminderAddCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
+func (c *ReminderAddCmd) Run(client *slack.Client) error {
 	postAt, err := resolveTime(c.At, c.After)
 	if err != nil {
 		return err
 	}
 
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	reminder, err := client.AddReminder(c.Text, postAt)
 	if err != nil {
 		return err
@@ -62,18 +54,11 @@ func (c *ReminderAddCmd) Run() error {
 
 // ReminderListCmd lists all reminders.
 type ReminderListCmd struct {
-	Format  string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Format string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
 }
 
 // Run executes the reminder list command.
-func (c *ReminderListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ReminderListCmd) Run(client *slack.Client) error {
 	reminders, err := client.ListReminders()
 	if err != nil {
 		return err
@@ -111,18 +96,11 @@ func (c *ReminderListCmd) Run() error {
 
 // ReminderDeleteCmd deletes a reminder by ID.
 type ReminderDeleteCmd struct {
-	ID      string `name:"id" required:"" help:"Reminder ID"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	ID string `name:"id" required:"" help:"Reminder ID"`
 }
 
 // Run executes the reminder delete command.
-func (c *ReminderDeleteCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ReminderDeleteCmd) Run(client *slack.Client) error {
 	if err := client.DeleteReminder(c.ID); err != nil {
 		return err
 	}
@@ -133,18 +111,11 @@ func (c *ReminderDeleteCmd) Run() error {
 
 // ReminderCompleteCmd marks a reminder as complete.
 type ReminderCompleteCmd struct {
-	ID      string `name:"id" required:"" help:"Reminder ID"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	ID string `name:"id" required:"" help:"Reminder ID"`
 }
 
 // Run executes the reminder complete command.
-func (c *ReminderCompleteCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ReminderCompleteCmd) Run(client *slack.Client) error {
 	if err := client.CompleteReminder(c.ID); err != nil {
 		return err
 	}

@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
 )
@@ -19,17 +18,10 @@ type ReactionAddCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Timestamp string `name:"timestamp" short:"t" required:"" help:"Message timestamp"`
 	Emoji     string `name:"emoji" short:"e" required:"" help:"Emoji name (without colons)"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the reaction add command.
-func (c *ReactionAddCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ReactionAddCmd) Run(client *slack.Client) error {
 	if err := client.AddReaction(c.Channel, c.Timestamp, c.Emoji); err != nil {
 		return err
 	}
@@ -43,17 +35,10 @@ type ReactionRemoveCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Timestamp string `name:"timestamp" short:"t" required:"" help:"Message timestamp"`
 	Emoji     string `name:"emoji" short:"e" required:"" help:"Emoji name (without colons)"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the reaction remove command.
-func (c *ReactionRemoveCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ReactionRemoveCmd) Run(client *slack.Client) error {
 	if err := client.RemoveReaction(c.Channel, c.Timestamp, c.Emoji); err != nil {
 		return err
 	}

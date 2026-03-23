@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 )
@@ -17,17 +16,10 @@ type UserGroupsCmd struct {
 type UserGroupsListCmd struct {
 	IncludeDisabled bool   `name:"include-disabled" default:"false" help:"Include disabled user groups"`
 	Format          string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile         string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the usergroups list command.
-func (c *UserGroupsListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *UserGroupsListCmd) Run(client *slack.Client) error {
 	groups, err := client.ListUserGroups(slack.ListUserGroupsOptions{
 		IncludeCount:    true,
 		IncludeDisabled: c.IncludeDisabled,

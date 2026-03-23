@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
@@ -21,17 +20,10 @@ type BookmarkCmd struct {
 type BookmarkAddCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel ID"`
 	Timestamp string `name:"ts" required:"" help:"Message timestamp"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the bookmark add command.
-func (c *BookmarkAddCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *BookmarkAddCmd) Run(client *slack.Client) error {
 	if err := client.AddStar(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -42,19 +34,12 @@ func (c *BookmarkAddCmd) Run() error {
 
 // BookmarkListCmd lists saved items.
 type BookmarkListCmd struct {
-	Limit   int    `name:"limit" optional:"" default:"100" help:"Number of items to display"`
-	Format  string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Limit  int    `name:"limit" optional:"" default:"100" help:"Number of items to display"`
+	Format string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
 }
 
 // Run executes the bookmark list command.
-func (c *BookmarkListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *BookmarkListCmd) Run(client *slack.Client) error {
 	result, err := client.ListStars(c.Limit)
 	if err != nil {
 		return err
@@ -96,17 +81,10 @@ func (c *BookmarkListCmd) Run() error {
 type BookmarkRemoveCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel ID"`
 	Timestamp string `name:"ts" required:"" help:"Message timestamp"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the bookmark remove command.
-func (c *BookmarkRemoveCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *BookmarkRemoveCmd) Run(client *slack.Client) error {
 	if err := client.RemoveStar(c.Channel, c.Timestamp); err != nil {
 		return err
 	}

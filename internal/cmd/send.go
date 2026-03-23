@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
 )
@@ -26,11 +25,10 @@ type SendCmd struct {
 	Thread  string `name:"thread" short:"t" help:"Thread timestamp to reply to" optional:""`
 	At      string `name:"at" help:"Schedule time (Unix timestamp in seconds or ISO 8601)" optional:""`
 	After   string `name:"after" help:"Schedule after N minutes" optional:""`
-	Profile string `name:"profile" help:"Use specific workspace profile" optional:""`
 }
 
 // Run executes the send command.
-func (c *SendCmd) Run() error {
+func (c *SendCmd) Run(client *slack.Client) error {
 	if err := c.validate(); err != nil {
 		return err
 	}
@@ -44,13 +42,6 @@ func (c *SendCmd) Run() error {
 	if err != nil {
 		return err
 	}
-
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	targetChannel, targetLabel, err := c.resolveTarget(client)
 	if err != nil {

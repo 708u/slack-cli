@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
 )
@@ -23,7 +22,6 @@ type UploadCmd struct {
 	Message  string `name:"message" short:"m" optional:"" help:"Initial comment with the file"`
 	Filetype string `name:"filetype" optional:"" help:"Snippet type (e.g. python, javascript, csv)"`
 	Thread   string `name:"thread" short:"t" optional:"" help:"Thread timestamp to upload as reply"`
-	Profile  string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Validate checks that exactly one of --file or --content is provided
@@ -55,19 +53,12 @@ func (c *UploadCmd) Validate() error {
 }
 
 // Run executes the upload command.
-func (c *UploadCmd) Run() error {
+func (c *UploadCmd) Run(client *slack.Client) error {
 	if c.File != "" {
 		if _, err := os.Stat(c.File); err != nil {
 			return util.NewFileError(fmt.Sprintf("file not found: %s", c.File))
 		}
 	}
-
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	channelID, displayName, err := c.resolveTarget(client)
 	if err != nil {

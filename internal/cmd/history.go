@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -22,11 +21,10 @@ type HistoryCmd struct {
 	Thread   string `name:"thread" short:"t" help:"Thread timestamp" optional:""`
 	WithLink bool   `name:"with-link" help:"Include permalink URLs"`
 	Format   string `name:"format" enum:"table,simple,json" default:"table"`
-	Profile  string `name:"profile" optional:""`
 }
 
 // Run executes the history command.
-func (c *HistoryCmd) Run() error {
+func (c *HistoryCmd) Run(client *slack.Client) error {
 	targets := 0
 	if c.Channel != "" {
 		targets++
@@ -43,13 +41,6 @@ func (c *HistoryCmd) Run() error {
 	if targets > 1 {
 		return fmt.Errorf("--channel, --user, and --user-id are mutually exclusive")
 	}
-
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 
 	channelID, displayName, err := c.resolveTarget(client)
 	if err != nil {

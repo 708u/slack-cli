@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
@@ -21,17 +20,10 @@ type PinCmd struct {
 type PinAddCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Timestamp string `name:"timestamp" short:"t" required:"" help:"Message timestamp"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the pin add command.
-func (c *PinAddCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *PinAddCmd) Run(client *slack.Client) error {
 	if err := client.AddPin(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -44,17 +36,10 @@ func (c *PinAddCmd) Run() error {
 type PinRemoveCmd struct {
 	Channel   string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Timestamp string `name:"timestamp" short:"t" required:"" help:"Message timestamp"`
-	Profile   string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the pin remove command.
-func (c *PinRemoveCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *PinRemoveCmd) Run(client *slack.Client) error {
 	if err := client.RemovePin(c.Channel, c.Timestamp); err != nil {
 		return err
 	}
@@ -67,17 +52,10 @@ func (c *PinRemoveCmd) Run() error {
 type PinListCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Channel name or ID"`
 	Format  string `name:"format" optional:"" default:"table" enum:"table,simple,json" help:"Output format: table, simple, json"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the pin list command.
-func (c *PinListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *PinListCmd) Run(client *slack.Client) error {
 	items, err := client.ListPins(c.Channel)
 	if err != nil {
 		return err

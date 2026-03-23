@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -21,17 +20,10 @@ type ChannelCmd struct {
 type ChannelInfoCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Target channel name or ID"`
 	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the channel info command.
-func (c *ChannelInfoCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ChannelInfoCmd) Run(client *slack.Client) error {
 	detail, err := client.GetChannelDetail(c.Channel)
 	if err != nil {
 		return err
@@ -45,17 +37,10 @@ func (c *ChannelInfoCmd) Run() error {
 type ChannelSetTopicCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Target channel name or ID"`
 	Topic   string `name:"topic" required:"" help:"New topic text"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the channel set-topic command.
-func (c *ChannelSetTopicCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ChannelSetTopicCmd) Run(client *slack.Client) error {
 	if err := client.SetTopic(c.Channel, c.Topic); err != nil {
 		return err
 	}
@@ -68,17 +53,10 @@ func (c *ChannelSetTopicCmd) Run() error {
 type ChannelSetPurposeCmd struct {
 	Channel string `name:"channel" short:"c" required:"" help:"Target channel name or ID"`
 	Purpose string `name:"purpose" required:"" help:"New purpose text"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
 }
 
 // Run executes the channel set-purpose command.
-func (c *ChannelSetPurposeCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *ChannelSetPurposeCmd) Run(client *slack.Client) error {
 	if err := client.SetPurpose(c.Channel, c.Purpose); err != nil {
 		return err
 	}

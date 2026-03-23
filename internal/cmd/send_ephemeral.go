@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/fatih/color"
 )
@@ -15,21 +14,14 @@ type SendEphemeralCmd struct {
 	User    string `name:"user" short:"u" required:"" help:"User ID who will see the ephemeral message"`
 	Message string `name:"message" short:"m" required:"" help:"Message to send"`
 	Thread  string `name:"thread" short:"t" help:"Thread timestamp to reply to" optional:""`
-	Profile string `name:"profile" help:"Use specific workspace profile" optional:""`
 }
 
 // Run executes the send-ephemeral command.
-func (c *SendEphemeralCmd) Run() error {
+func (c *SendEphemeralCmd) Run(client *slack.Client) error {
 	if c.Thread != "" && !threadTSPattern.MatchString(c.Thread) {
 		return fmt.Errorf("invalid thread timestamp format")
 	}
 
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
 	if err := client.SendEphemeralMessage(c.Channel, c.User, c.Message, c.Thread); err != nil {
 		return err
 	}

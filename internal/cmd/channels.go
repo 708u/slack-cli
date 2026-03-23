@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -15,18 +14,10 @@ type ChannelsCmd struct {
 	IncludeArchived bool   `name:"include-archived" help:"Include archived channels"`
 	Format          string `name:"format" help:"Output format" enum:"table,simple,json" default:"table"`
 	Limit           int    `name:"limit" help:"Max channels" default:"100"`
-	Profile         string `name:"profile" help:"Workspace profile" optional:""`
 }
 
 // Run executes the channels command.
-func (c *ChannelsCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
+func (c *ChannelsCmd) Run(client *slack.Client) error {
 	types := util.GetChannelTypes(c.Type)
 	channels, err := client.ListChannels(slack.ListChannelsOptions{
 		Types:           types,

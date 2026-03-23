@@ -5,7 +5,6 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -18,18 +17,10 @@ type UnreadCmd struct {
 	CountOnly bool   `name:"count-only" help:"Show only counts"`
 	Limit     int    `name:"limit" help:"Max channels" default:"50"`
 	MarkRead  bool   `name:"mark-read" help:"Mark as read after fetching"`
-	Profile   string `name:"profile" optional:""`
 }
 
 // Run executes the unread command.
-func (c *UnreadCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
+func (c *UnreadCmd) Run(client *slack.Client) error {
 	if c.Channel != "" {
 		return c.handleSpecificChannel(client)
 	}

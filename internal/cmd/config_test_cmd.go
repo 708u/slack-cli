@@ -11,9 +11,7 @@ import (
 
 // ConfigTestCmd tests the current tokens by calling auth.test and
 // displaying the token type, workspace, user, and granted scopes.
-type ConfigTestCmd struct {
-	Profile string `name:"profile" help:"Profile name" optional:""`
-}
+type ConfigTestCmd struct{}
 
 type authTestResult struct {
 	OK    bool   `json:"ok"`
@@ -24,8 +22,8 @@ type authTestResult struct {
 }
 
 // Run executes the config test command.
-func (c *ConfigTestCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
+func (c *ConfigTestCmd) Run(cli *CLI) error {
+	tokens, err := config.GetConfigOrError(cli.Profile)
 	if err != nil {
 		return err
 	}

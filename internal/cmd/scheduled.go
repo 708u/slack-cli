@@ -5,7 +5,6 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -22,18 +21,10 @@ type ScheduledListCmd struct {
 	Channel string `name:"channel" short:"c" help:"Filter by channel name or ID" optional:""`
 	Limit   int    `name:"limit" help:"Maximum number of scheduled messages to list" default:"50"`
 	Format  string `name:"format" enum:"table,simple,json" default:"table"`
-	Profile string `name:"profile" help:"Workspace profile" optional:""`
 }
 
 // Run executes the scheduled list command.
-func (c *ScheduledListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
+func (c *ScheduledListCmd) Run(client *slack.Client) error {
 	messages, err := client.ListScheduledMessages(c.Channel, c.Limit)
 	if err != nil {
 		return err
@@ -63,18 +54,10 @@ func (c *ScheduledListCmd) Run() error {
 type ScheduledCancelCmd struct {
 	Channel string `name:"channel" short:"c" help:"Channel name or ID" required:""`
 	ID      string `name:"id" help:"Scheduled message ID" required:""`
-	Profile string `name:"profile" help:"Workspace profile" optional:""`
 }
 
 // Run executes the scheduled cancel command.
-func (c *ScheduledCancelCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
+func (c *ScheduledCancelCmd) Run(client *slack.Client) error {
 	if err := client.CancelScheduledMessage(c.Channel, c.ID); err != nil {
 		return err
 	}

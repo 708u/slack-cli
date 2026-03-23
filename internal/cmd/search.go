@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 	"github.com/708u/slack-cli/internal/util"
@@ -17,18 +16,10 @@ type SearchCmd struct {
 	Number  int    `name:"number" short:"n" help:"Results per page" default:"20"`
 	Page    int    `name:"page" help:"Page number" default:"1"`
 	Format  string `name:"format" enum:"table,simple,json" default:"table"`
-	Profile string `name:"profile" optional:""`
 }
 
 // Run executes the search command.
-func (c *SearchCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
+func (c *SearchCmd) Run(client *slack.Client) error {
 	result, err := client.SearchMessages(c.Query, &slack.SearchMessagesOptions{
 		Sort:    c.Sort,
 		SortDir: c.SortDir,

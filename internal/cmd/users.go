@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
 )
@@ -20,19 +19,12 @@ type UsersCmd struct {
 
 // UsersListCmd lists workspace users.
 type UsersListCmd struct {
-	Limit   int    `name:"limit" default:"100" help:"Maximum number of users to list"`
-	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Limit  int    `name:"limit" default:"100" help:"Maximum number of users to list"`
+	Format string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
 }
 
 // Run executes the users list command.
-func (c *UsersListCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *UsersListCmd) Run(client *slack.Client) error {
 	users, err := client.ListUsers(c.Limit)
 	if err != nil {
 		return err
@@ -54,19 +46,12 @@ func (c *UsersListCmd) Run() error {
 
 // UsersInfoCmd displays detailed information about a user.
 type UsersInfoCmd struct {
-	ID      string `name:"id" required:"" help:"User ID"`
-	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	ID     string `name:"id" required:"" help:"User ID"`
+	Format string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
 }
 
 // Run executes the users info command.
-func (c *UsersInfoCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *UsersInfoCmd) Run(client *slack.Client) error {
 	user, err := client.GetUserInfo(c.ID)
 	if err != nil {
 		return err
@@ -78,19 +63,12 @@ func (c *UsersInfoCmd) Run() error {
 
 // UsersLookupCmd looks up a user by email address.
 type UsersLookupCmd struct {
-	Email   string `name:"email" required:"" help:"Email address to look up"`
-	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Email  string `name:"email" required:"" help:"Email address to look up"`
+	Format string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
 }
 
 // Run executes the users lookup command.
-func (c *UsersLookupCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *UsersLookupCmd) Run(client *slack.Client) error {
 	user, err := client.LookupUserByEmail(c.Email)
 	if err != nil {
 		return err
@@ -102,14 +80,13 @@ func (c *UsersLookupCmd) Run() error {
 
 // UsersPresenceCmd checks the presence status of a user.
 type UsersPresenceCmd struct {
-	ID      string `name:"id" optional:"" help:"User ID"`
-	Name    string `name:"name" optional:"" help:"Username (e.g. @username)"`
-	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	ID     string `name:"id" optional:"" help:"User ID"`
+	Name   string `name:"name" optional:"" help:"Username (e.g. @username)"`
+	Format string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
 }
 
 // Run executes the users presence command.
-func (c *UsersPresenceCmd) Run() error {
+func (c *UsersPresenceCmd) Run(client *slack.Client) error {
 	if c.ID == "" && c.Name == "" {
 		return errors.New("you must specify either --id or --name")
 	}
@@ -117,15 +94,9 @@ func (c *UsersPresenceCmd) Run() error {
 		return errors.New("cannot use both --id and --name")
 	}
 
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
-
 	userID := c.ID
 	if c.Name != "" {
+		var err error
 		userID, err = client.ResolveUserIDByName(c.Name)
 		if err != nil {
 			return err
@@ -143,20 +114,13 @@ func (c *UsersPresenceCmd) Run() error {
 
 // UsersSearchCmd searches users by real name or display name.
 type UsersSearchCmd struct {
-	Query   string `arg:"" help:"Search query (matches real name and display name)"`
-	Limit   int    `name:"limit" default:"50" help:"Maximum number of results"`
-	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
-	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+	Query  string `arg:"" help:"Search query (matches real name and display name)"`
+	Limit  int    `name:"limit" default:"50" help:"Maximum number of results"`
+	Format string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
 }
 
 // Run executes the users search command.
-func (c *UsersSearchCmd) Run() error {
-	tokens, err := config.GetConfigOrError(c.Profile)
-	if err != nil {
-		return err
-	}
-
-	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+func (c *UsersSearchCmd) Run(client *slack.Client) error {
 	users, err := client.SearchUsers(c.Query, c.Limit)
 	if err != nil {
 		return err

@@ -233,6 +233,24 @@ type CanvasFile struct {
 	FileType string
 }
 
+// UserGroup represents a Slack user group (mention group).
+type UserGroup struct {
+	ID          string
+	Name        string
+	Handle      string
+	Description string
+	UserCount   int
+	IsExternal  bool
+	DateCreate  int64
+	DateUpdate  int64
+}
+
+// ListUserGroupsOptions controls usergroups.list filtering.
+type ListUserGroupsOptions struct {
+	IncludeCount    bool
+	IncludeDisabled bool
+}
+
 // UploadFileOptions configures a file or snippet upload.
 type UploadFileOptions struct {
 	Channel        string

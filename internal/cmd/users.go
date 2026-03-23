@@ -12,6 +12,7 @@ import (
 // UsersCmd groups user-related subcommands.
 type UsersCmd struct {
 	List     UsersListCmd     `cmd:"" help:"List workspace users"`
+	Search   UsersSearchCmd   `cmd:"" help:"Search users by name"`
 	Info     UsersInfoCmd     `cmd:"" help:"Get user info"`
 	Lookup   UsersLookupCmd   `cmd:"" help:"Look up user by email"`
 	Presence UsersPresenceCmd `cmd:"" help:"Check user presence"`
@@ -140,14 +141,53 @@ func (c *UsersPresenceCmd) Run() error {
 	return nil
 }
 
+// UsersSearchCmd searches users by real name or display name.
+type UsersSearchCmd struct {
+	Query   string `arg:"" help:"Search query (matches real name and display name)"`
+	Limit   int    `name:"limit" default:"50" help:"Maximum number of results"`
+	Format  string `name:"format" enum:"table,simple,json" default:"table" help:"Output format"`
+	Profile string `name:"profile" optional:"" help:"Use specific workspace profile"`
+}
+
+// Run executes the users search command.
+func (c *UsersSearchCmd) Run() error {
+	tokens, err := config.GetConfigOrError(c.Profile)
+	if err != nil {
+		return err
+	}
+
+	client := slack.NewClient(tokens.BotToken, tokens.UserToken)
+	users, err := client.SearchUsers(c.Query, c.Limit)
+	if err != nil {
+		return err
+	}
+
+	if len(users) == 0 {
+		fmt.Printf("No users found for query %q\n", c.Query)
+		return nil
+	}
+
+	infos := make([]format.UserInfo, len(users))
+	for i, u := range users {
+		infos[i] = toUserInfo(u)
+	}
+
+	format.FormatUserList(infos, format.ParseFormat(c.Format))
+	return nil
+}
+
 func toUserInfo(u slack.SlackUser) format.UserInfo {
-	return format.UserInfo{
+	info := format.UserInfo{
 		ID:       u.ID,
 		Name:     u.Name,
 		RealName: u.RealName,
 		IsBot:    u.IsBot,
 		IsAdmin:  u.IsAdmin,
 	}
+	if u.Profile != nil {
+		info.DisplayName = u.Profile.DisplayName
+	}
+	return info
 }
 
 func toUserDetailInfo(u *slack.SlackUser) format.UserDetailInfo {

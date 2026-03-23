@@ -111,8 +111,9 @@ Bot Token (`xoxb-`) scopes:
 - `files:write` -- `upload`
 - `pins:read` / `pins:write` -- `pin` ops
 - `reactions:write` -- `reaction` ops
-- `users:read` -- `users list/info/presence`
+- `users:read` -- `users list/info/presence/search`
 - `users:read.email` -- `users lookup`
+- `usergroups:read` -- `usergroups list`
 
 User Token (`xoxp-`) only scopes:
 

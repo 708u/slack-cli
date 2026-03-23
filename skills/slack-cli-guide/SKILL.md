@@ -4,9 +4,10 @@ description: |
   Reference guide for the slack-cli command-line tool (github.com/708u/slack-cli).
   Use this skill when the user asks how to use slack-cli, wants to know available
   commands or options, asks about sending Slack messages from the terminal, managing
-  Slack channels/users/reminders/pins/reactions via CLI, or mentions "slack-cli" in
-  any context. Also trigger when the user wants to configure Slack API tokens,
-  manage workspace profiles, or automate Slack operations from the command line.
+  Slack channels/users/usergroups/reminders/pins/reactions via CLI, or mentions
+  "slack-cli" in any context. Also trigger when the user wants to configure
+  Slack API tokens, manage workspace profiles, or automate Slack operations
+  from the command line.
 ---
 
 # slack-cli Command Reference
@@ -50,8 +51,9 @@ Bot Token (`xoxb-`) scopes:
 - `files:write` -- `upload`
 - `pins:read` / `pins:write` -- `pin` ops
 - `reactions:write` -- `reaction` ops
-- `users:read` -- `users list/info/presence`
+- `users:read` -- `users list/info/presence/search`
 - `users:read.email` -- `users lookup`
+- `usergroups:read` -- `usergroups list`
 
 User Token (`xoxp-`) only scopes:
 
@@ -238,6 +240,8 @@ slack-cli pin list -c general --format json
 
 ```bash
 slack-cli users list --limit 50
+slack-cli users search "Alice"
+slack-cli users search "alice" --limit 10 --format json
 slack-cli users info --id U0123456789
 slack-cli users lookup --email alice@company.com
 slack-cli users presence --name @alice
@@ -247,9 +251,14 @@ slack-cli users presence --id U0123456789
 | Subcommand | Required | Optional |
 |---|---|---|
 | `users list` | | `--limit` (100), `--format` |
+| `users search` | `<query>` (positional) | `--limit` (50), `--format` |
 | `users info` | `--id` | `--format` |
 | `users lookup` | `--email` | `--format` |
 | `users presence` | `--id` or `--name` | `--format` |
+
+`users search` matches against real name and display name
+(case-insensitive). `users list` also shows the Display Name
+column.
 
 ## channel
 
@@ -346,3 +355,14 @@ slack-cli canvas list -c general --format json
 |---|---|---|
 | `canvas read` | `--id` (`-i`) | `--format` |
 | `canvas list` | `-c` | `--format` |
+
+## usergroups
+
+```bash
+slack-cli usergroups list
+slack-cli usergroups list --include-disabled --format json
+```
+
+| Subcommand | Required | Optional |
+|---|---|---|
+| `usergroups list` | | `--include-disabled`, `--format` |

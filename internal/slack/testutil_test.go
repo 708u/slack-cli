@@ -91,6 +91,7 @@ func (m *mockSlack) newTestClient() *Client {
 	c.fileOps = newFileOps(api, c.channelOps)
 	c.canvasOps = newCanvasOps(api, "xoxb-test-token", c.channelOps)
 	c.canvasOps.baseURL = m.server.URL + "/api/"
+	c.userGroupOps = newUserGroupOps(api)
 
 	return c
 }

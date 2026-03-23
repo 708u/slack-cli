@@ -47,8 +47,9 @@ Token (`xoxp-`) is required for the full feature set.
 | `pins:read` | `pin list` |
 | `pins:write` | `pin add/remove` |
 | `reactions:write` | `reaction add/remove` |
-| `users:read` | `users list/info/presence` |
+| `users:read` | `users list/info/presence/search` |
 | `users:read.email` | `users lookup` |
+| `usergroups:read` | `usergroups list` |
 
 **User Token (`xoxp-`) only scopes:**
 
@@ -116,6 +117,12 @@ slack-cli reminder add --text "standup" --after 15
 
 # User info
 slack-cli users info --id U0123456789
+
+# Search users by name
+slack-cli users search "Alice"
+
+# User groups
+slack-cli usergroups list
 ```
 
 Run `slack-cli --help` for full command list, or

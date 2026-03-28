@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
+	"github.com/708u/slack-cli/internal/tz"
 	"github.com/fatih/color"
 )
 
@@ -52,7 +54,7 @@ func (c *SendCmd) Run(client *slack.Client) error {
 		if err := client.ScheduleMessage(targetChannel, messageContent, postAt, c.Thread); err != nil {
 			return err
 		}
-		postAtISO := time.Unix(postAt, 0).UTC().Format(time.RFC3339)
+		postAtISO := format.FormatUnixISO(postAt)
 		fmt.Println(color.GreenString("Message scheduled to %s at %s", targetLabel, postAtISO))
 		return nil
 	}
@@ -196,12 +198,17 @@ func parseScheduledTimestamp(value string) (int64, error) {
 		return ts, nil
 	}
 
-	// Try ISO 8601.
-	t, err := time.Parse(time.RFC3339, trimmed)
-	if err != nil {
-		return 0, fmt.Errorf(
-			"invalid schedule time format. Use Unix timestamp (seconds) or ISO 8601 date-time",
-		)
+	// Try ISO 8601 (RFC3339 includes timezone offset).
+	if t, err := time.Parse(time.RFC3339, trimmed); err == nil {
+		return t.Unix(), nil
 	}
-	return t.Unix(), nil
+
+	// Try "2006-01-02 15:04" in the configured timezone.
+	if t, err := time.ParseInLocation("2006-01-02 15:04", trimmed, tz.Location()); err == nil {
+		return t.Unix(), nil
+	}
+
+	return 0, fmt.Errorf(
+		"invalid schedule time format. Use Unix timestamp, ISO 8601, or YYYY-MM-DD HH:MM",
+	)
 }

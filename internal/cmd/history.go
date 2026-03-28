@@ -8,6 +8,7 @@ import (
 
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
+	"github.com/708u/slack-cli/internal/tz"
 	"github.com/708u/slack-cli/internal/util"
 )
 
@@ -153,7 +154,7 @@ func prepareSinceTimestamp(since string) (string, error) {
 		return "", nil
 	}
 
-	t, err := time.Parse("2006-01-02 15:04:05", since)
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", since, tz.Location())
 	if err != nil {
 		return "", fmt.Errorf("invalid date format %q: use YYYY-MM-DD HH:MM:SS", since)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/708u/slack-cli/internal/tz"
 	"github.com/fatih/color"
 )
 
@@ -84,7 +85,7 @@ func FormatReminders(reminders []ReminderInfo, f Format) {
 				ID:            r.ID,
 				Text:          r.Text,
 				Time:          r.Time,
-				TimeFormatted: formatUnixISO(r.Time),
+				TimeFormatted: FormatUnixISO(r.Time),
 				Status:        reminderStatus(r.CompleteTS),
 				Recurring:     r.Recurring,
 			}
@@ -93,7 +94,7 @@ func FormatReminders(reminders []ReminderInfo, f Format) {
 	case Simple:
 		for _, r := range reminders {
 			fmt.Printf("%s\t%s\t%s\t%s\n",
-				r.ID, r.Text, formatUnixISO(r.Time), reminderStatus(r.CompleteTS))
+				r.ID, r.Text, FormatUnixISO(r.Time), reminderStatus(r.CompleteTS))
 		}
 	default:
 		const (
@@ -110,7 +111,7 @@ func FormatReminders(reminders []ReminderInfo, f Format) {
 			fmt.Printf("%-*s%-*s%-*s%-*s\n",
 				idW, r.ID,
 				textW, text,
-				timeW, formatUnixISO(r.Time),
+				timeW, FormatUnixISO(r.Time),
 				statusW, reminderStatus(r.CompleteTS))
 		}
 	}
@@ -145,14 +146,14 @@ func FormatBookmarks(items []BookmarkInfo, f Format) {
 				MessageTS:  b.MessageTS,
 				Text:       b.Text,
 				DateCreate: b.DateCreate,
-				SavedAt:    formatUnixISO(b.DateCreate),
+				SavedAt:    FormatUnixISO(b.DateCreate),
 			}
 		}
 		PrintJSON(out)
 	case Simple:
 		for _, b := range items {
 			fmt.Printf("%s\t%s\t%s\t%s\n",
-				b.Channel, b.MessageTS, b.Text, formatUnixISO(b.DateCreate))
+				b.Channel, b.MessageTS, b.Text, FormatUnixISO(b.DateCreate))
 		}
 	default:
 		const (
@@ -170,7 +171,7 @@ func FormatBookmarks(items []BookmarkInfo, f Format) {
 				chW, b.Channel,
 				tsW, b.MessageTS,
 				textW, text,
-				dateW, formatUnixISO(b.DateCreate))
+				dateW, FormatUnixISO(b.DateCreate))
 		}
 	}
 }
@@ -182,16 +183,18 @@ func reminderStatus(completeTS int64) string {
 	return "pending"
 }
 
-func formatUnixISO(ts int64) string {
+// FormatUnixISO formats a Unix epoch as an RFC3339 string in the
+// configured timezone. Returns "" for zero.
+func FormatUnixISO(ts int64) string {
 	if ts == 0 {
 		return ""
 	}
-	return time.Unix(ts, 0).UTC().Format(time.RFC3339)
+	return time.Unix(ts, 0).In(tz.Location()).Format(time.RFC3339)
 }
 
 func formatUnixDate(ts int64) string {
 	if ts == 0 {
 		return ""
 	}
-	return time.Unix(ts, 0).UTC().Format("2006-01-02")
+	return time.Unix(ts, 0).In(tz.Location()).Format("2006-01-02")
 }

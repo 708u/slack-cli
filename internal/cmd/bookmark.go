@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
@@ -56,10 +55,7 @@ func (c *BookmarkListCmd) Run(client *slack.Client) error {
 		format.PrintJSON(result.Items)
 	case format.Simple:
 		for _, item := range result.Items {
-			created := ""
-			if item.DateCreate != 0 {
-				created = time.Unix(item.DateCreate, 0).UTC().Format(time.RFC3339)
-			}
+			created := format.FormatUnixISO(item.DateCreate)
 			fmt.Printf("%s %s %s %s\n", created, item.Channel, item.Message.TS, item.Message.Text)
 		}
 	default:
@@ -67,10 +63,7 @@ func (c *BookmarkListCmd) Run(client *slack.Client) error {
 		bold.Printf("%-26s%-14s%-20s%s\n", "Created", "Channel", "Timestamp", "Text")
 		fmt.Println(format.Separator(70))
 		for _, item := range result.Items {
-			created := ""
-			if item.DateCreate != 0 {
-				created = time.Unix(item.DateCreate, 0).UTC().Format(time.RFC3339)
-			}
+			created := format.FormatUnixISO(item.DateCreate)
 			fmt.Printf("%-26s%-14s%-20s%s\n", created, item.Channel, item.Message.TS, item.Message.Text)
 		}
 	}

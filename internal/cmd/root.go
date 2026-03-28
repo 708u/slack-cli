@@ -2,15 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/708u/slack-cli/internal/config"
 	"github.com/708u/slack-cli/internal/slack"
+	"github.com/708u/slack-cli/internal/tz"
 	"github.com/alecthomas/kong"
 )
 
 // CLI is the root Kong CLI struct. All subcommands are defined as fields.
 type CLI struct {
 	Profile string `name:"profile" help:"Workspace profile to use" optional:""`
+	TZ      string `name:"tz" help:"Timezone (IANA name, e.g. Asia/Tokyo)" optional:"" env:"SLACK_CLI_TZ"`
 
 	Config        ConfigCmd        `cmd:"" help:"Manage Slack CLI configuration"`
 	Send          SendCmd          `cmd:"" help:"Send or schedule a message to a Slack channel or DM"`
@@ -37,6 +40,29 @@ type CLI struct {
 	Usergroups    UserGroupsCmd    `cmd:"" help:"Manage user groups"`
 
 	Version VersionFlag `name:"version" help:"Print version information"`
+}
+
+// ResolveTimezone resolves the effective timezone and sets it in the
+// tz package. Resolution order: --tz flag > profile config > time.Local.
+func (c *CLI) ResolveTimezone() error {
+	tzName := c.TZ
+	if tzName == "" {
+		mgr := config.NewProfileConfigManager()
+		saved, err := mgr.GetTimezone(c.Profile)
+		if err != nil {
+			return err
+		}
+		tzName = saved
+	}
+	if tzName == "" {
+		return nil // keep time.Local default
+	}
+	loc, err := time.LoadLocation(tzName)
+	if err != nil {
+		return fmt.Errorf("invalid timezone %q: %w", tzName, err)
+	}
+	tz.Set(loc)
+	return nil
 }
 
 // ProvideSlackClient creates a *slack.Client from the global --profile flag.

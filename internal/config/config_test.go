@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -220,6 +221,67 @@ func TestMaskToken(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("MaskToken(%q) = %q, want %q", tt.token, got, tt.expected)
 		}
+	}
+}
+
+func TestSetAndGetTimezone(t *testing.T) {
+	_, mgr := setupTestDir(t)
+
+	// First create a profile with a token so it exists.
+	if _, err := mgr.SetToken("xoxb-test-token", ""); err != nil {
+		t.Fatalf("SetToken: %v", err)
+	}
+
+	if err := mgr.SetTimezone("Asia/Tokyo", ""); err != nil {
+		t.Fatalf("SetTimezone: %v", err)
+	}
+
+	got, err := mgr.GetTimezone("")
+	if err != nil {
+		t.Fatalf("GetTimezone: %v", err)
+	}
+	if got != "Asia/Tokyo" {
+		t.Errorf("expected Asia/Tokyo, got %s", got)
+	}
+
+	// Verify token is still there.
+	cfg, err := mgr.GetConfig("")
+	if err != nil {
+		t.Fatalf("GetConfig: %v", err)
+	}
+	if cfg.BotToken != "xoxb-test-token" {
+		t.Errorf("expected token preserved, got %s", cfg.BotToken)
+	}
+}
+
+func TestSetTimezoneInvalid(t *testing.T) {
+	_, mgr := setupTestDir(t)
+
+	err := mgr.SetTimezone("Invalid/Zone", "")
+	if err == nil {
+		t.Fatal("expected error for invalid timezone")
+	}
+
+	var ve *ValidationError
+	if !errors.As(err, &ve) {
+		t.Errorf("expected ValidationError, got %T: %v", err, err)
+	}
+}
+
+func TestSetTimezoneOnly(t *testing.T) {
+	_, mgr := setupTestDir(t)
+
+	// Set timezone without any token.
+	if err := mgr.SetTimezone("America/New_York", "myprofile"); err != nil {
+		t.Fatalf("SetTimezone: %v", err)
+	}
+
+	got, err := mgr.GetTimezone("myprofile")
+	if err != nil {
+		t.Fatalf("GetTimezone: %v", err)
+	}
+	if got != "America/New_York" {
+		t.Errorf("expected America/New_York, got %s", got)
 	}
 }
 

@@ -198,12 +198,16 @@ func parseScheduledTimestamp(value string) (int64, error) {
 		return ts, nil
 	}
 
-	// Try ISO 8601 (RFC3339 includes timezone offset).
+	// RFC3339 strings carry their own UTC offset, so time.Parse
+	// is correct here -- the offset in the string is authoritative.
 	if t, err := time.Parse(time.RFC3339, trimmed); err == nil {
 		return t.Unix(), nil
 	}
 
-	// Try "2006-01-02 15:04" in the configured timezone.
+	// "2006-01-02 15:04" has no offset, so we must interpret it
+	// in the user's configured timezone via ParseInLocation.
+	// time.Parse would silently assume UTC, yielding wrong results
+	// for non-UTC users.
 	if t, err := time.ParseInLocation("2006-01-02 15:04", trimmed, tz.Location()); err == nil {
 		return t.Unix(), nil
 	}

@@ -154,6 +154,7 @@ func prepareSinceTimestamp(since string) (string, error) {
 		return "", nil
 	}
 
+	// No offset in this format; interpret in user's timezone.
 	t, err := time.ParseInLocation("2006-01-02 15:04:05", since, tz.Location())
 	if err != nil {
 		return "", fmt.Errorf("invalid date format %q: use YYYY-MM-DD HH:MM:SS", since)

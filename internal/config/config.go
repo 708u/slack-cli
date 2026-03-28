@@ -159,6 +159,9 @@ func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
 		return nil, nil
 	}
 
+	// Copy non-token fields directly; tokens need decryption.
+	// Timezone must be included here so that callers (e.g.
+	// config get) see the stored value through GetConfig.
 	result := Config{
 		Timezone:  cfg.Timezone,
 		UpdatedAt: cfg.UpdatedAt,
@@ -171,6 +174,7 @@ func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
 		result.UserToken = m.decryptToken(cfg.UserToken)
 	}
 
+	// A profile with only a timezone (no tokens) is still valid.
 	if result.BotToken == "" && result.UserToken == "" && result.Timezone == "" {
 		return nil, nil
 	}

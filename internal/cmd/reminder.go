@@ -136,11 +136,11 @@ func resolveTime(at, after string) (int64, error) {
 		if ts, err := strconv.ParseInt(at, 10, 64); err == nil {
 			return ts, nil
 		}
-		// Try RFC3339.
+		// RFC3339 carries its own UTC offset; time.Parse is correct.
 		if t, err := time.Parse(time.RFC3339, at); err == nil {
 			return t.Unix(), nil
 		}
-		// Try "2006-01-02 15:04".
+		// No offset in this format; interpret in user's timezone.
 		if t, err := time.ParseInLocation("2006-01-02 15:04", at, tz.Location()); err == nil {
 			return t.Unix(), nil
 		}

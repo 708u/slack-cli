@@ -79,6 +79,24 @@ Tokens are AES-256-GCM encrypted and stored in
 `~/.slack-cli/config.json`. The master key is auto-generated at
 `~/.slack-cli-secrets/master.key`.
 
+### Timezone
+
+Set a timezone to display and parse timestamps in local time
+instead of UTC.
+
+```bash
+# Save timezone to profile
+slack-cli config set --timezone Asia/Tokyo
+
+# Per-command override
+slack-cli --tz America/New_York history -c general
+
+# Environment variable
+export SLACK_CLI_TZ=Europe/London
+```
+
+Resolution order: `--tz` flag > profile config > system default.
+
 ## Usage
 
 ```bash

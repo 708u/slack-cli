@@ -6,8 +6,8 @@ description: |
   commands or options, asks about sending Slack messages from the terminal, managing
   Slack channels/users/usergroups/reminders/pins/reactions via CLI, or mentions
   "slack-cli" in any context. Also trigger when the user wants to configure
-  Slack API tokens, manage workspace profiles, or automate Slack operations
-  from the command line.
+  Slack API tokens, manage workspace profiles, set timezone preferences,
+  or automate Slack operations from the command line.
 ---
 
 # slack-cli Command Reference
@@ -15,7 +15,10 @@ description: |
 A Go CLI tool for interacting with the Slack API. Built with Kong.
 
 All commands accept `--profile <name>` to target a specific workspace.
-Commands with list output accept `--format table|simple|json` (default: table).
+All commands accept `--tz <IANA name>` (or env `SLACK_CLI_TZ`) to
+set the timezone for timestamp display and parsing.
+Commands with list output accept `--format table|simple|json`
+(default: table).
 
 ## Setup
 
@@ -32,6 +35,14 @@ slack-cli config use work
 
 # Environment variable fallback
 export SLACK_CLI_TOKEN=xoxb-...
+
+# Set timezone per profile
+slack-cli config set --timezone Asia/Tokyo
+slack-cli config set --timezone US/Pacific --profile work
+
+# Or use global flag / environment variable
+slack-cli --tz America/New_York history -c general
+export SLACK_CLI_TZ=Asia/Tokyo
 ```
 
 ### Required Scopes
@@ -65,7 +76,7 @@ User Token (`xoxp-`) only scopes:
 
 | Subcommand | Description |
 |---|---|
-| `config set` | Set API token. Options: `--token`, `--token-stdin`, `--profile` |
+| `config set` | Set token or timezone. `--token`, `--token-stdin`, `--timezone` |
 | `config get` | Show current config. Options: `--profile` |
 | `config test` | Test token and show granted scopes. Options: `--profile` |
 | `config profiles` | List all profiles |
@@ -97,7 +108,7 @@ slack-cli send -c general -m "reply" -t 1234567890.123456
 | `--message` | `-m` | m or f | Message text |
 | `--file` | `-f` | | File containing message |
 | `--thread` | `-t` | | Thread timestamp |
-| `--at` | | | Schedule time (Unix or ISO 8601) |
+| `--at` | | | Schedule time (Unix, ISO 8601, or YYYY-MM-DD HH:MM) |
 | `--after` | | | Schedule after N minutes |
 
 ## channels

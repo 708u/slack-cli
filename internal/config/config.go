@@ -25,6 +25,7 @@ const (
 type Config struct {
 	BotToken  string `json:"botToken,omitempty"`
 	UserToken string `json:"userToken,omitempty"`
+	Timezone  string `json:"timezone,omitempty"`
 	UpdatedAt string `json:"updatedAt"`
 }
 
@@ -158,7 +159,13 @@ func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
 		return nil, nil
 	}
 
-	result := Config{UpdatedAt: cfg.UpdatedAt}
+	// Copy non-token fields directly; tokens need decryption.
+	// Timezone must be included here so that callers (e.g.
+	// config get) see the stored value through GetConfig.
+	result := Config{
+		Timezone:  cfg.Timezone,
+		UpdatedAt: cfg.UpdatedAt,
+	}
 
 	if cfg.BotToken != "" {
 		result.BotToken = m.decryptToken(cfg.BotToken)
@@ -167,7 +174,8 @@ func (m *ProfileConfigManager) GetConfig(profile string) (*Config, error) {
 		result.UserToken = m.decryptToken(cfg.UserToken)
 	}
 
-	if result.BotToken == "" && result.UserToken == "" {
+	// A profile with only a timezone (no tokens) is still valid.
+	if result.BotToken == "" && result.UserToken == "" && result.Timezone == "" {
 		return nil, nil
 	}
 
@@ -267,6 +275,50 @@ func (m *ProfileConfigManager) ClearConfig(profile string) error {
 	}
 
 	return m.saveConfigStore(store)
+}
+
+// SetTimezone saves the timezone string for the given profile.
+func (m *ProfileConfigManager) SetTimezone(
+	timezone, profile string,
+) error {
+	if _, err := time.LoadLocation(timezone); err != nil {
+		return &ValidationError{
+			Msg: fmt.Sprintf("invalid timezone %q: %v", timezone, err),
+		}
+	}
+
+	store, err := m.getConfigStore()
+	if err != nil {
+		return err
+	}
+
+	profileName := m.resolveProfileName(profile, store)
+	cfg := store.Profiles[profileName]
+	cfg.Timezone = timezone
+	cfg.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	store.Profiles[profileName] = cfg
+
+	if store.DefaultProfile == "" || profileName == defaultProfileName {
+		store.DefaultProfile = profileName
+	}
+
+	return m.saveConfigStore(store)
+}
+
+// GetTimezone returns the timezone string for the given profile.
+// Returns "" if unset.
+func (m *ProfileConfigManager) GetTimezone(profile string) (string, error) {
+	store, err := m.getConfigStore()
+	if err != nil {
+		return "", err
+	}
+
+	profileName := m.resolveProfileName(profile, store)
+	cfg, ok := store.Profiles[profileName]
+	if !ok {
+		return "", nil
+	}
+	return cfg.Timezone, nil
 }
 
 // MaskToken masks a token for display, showing only the first and last

@@ -7,6 +7,7 @@ import (
 
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
+	"github.com/708u/slack-cli/internal/tz"
 	"github.com/fatih/color"
 )
 
@@ -47,7 +48,7 @@ func (c *ReminderAddCmd) Run(client *slack.Client) error {
 		return err
 	}
 
-	timeStr := time.Unix(reminder.Time, 0).UTC().Format(time.RFC3339)
+	timeStr := format.FormatUnixISO(reminder.Time)
 	fmt.Println(color.GreenString("Reminder created: %q at %s", reminder.Text, timeStr))
 	return nil
 }
@@ -75,7 +76,7 @@ func (c *ReminderListCmd) Run(client *slack.Client) error {
 		format.PrintJSON(reminders)
 	case format.Simple:
 		for _, r := range reminders {
-			t := time.Unix(r.Time, 0).UTC().Format(time.RFC3339)
+			t := format.FormatUnixISO(r.Time)
 			fmt.Printf("%s %s %s\n", r.ID, t, r.Text)
 		}
 	default:
@@ -83,7 +84,7 @@ func (c *ReminderListCmd) Run(client *slack.Client) error {
 		bold.Printf("%-14s%-26s%-10s%s\n", "ID", "Time", "Recurring", "Text")
 		fmt.Println(format.Separator(70))
 		for _, r := range reminders {
-			t := time.Unix(r.Time, 0).UTC().Format(time.RFC3339)
+			t := format.FormatUnixISO(r.Time)
 			recurring := "No"
 			if r.Recurring {
 				recurring = "Yes"
@@ -135,12 +136,12 @@ func resolveTime(at, after string) (int64, error) {
 		if ts, err := strconv.ParseInt(at, 10, 64); err == nil {
 			return ts, nil
 		}
-		// Try RFC3339.
+		// RFC3339 carries its own UTC offset; time.Parse is correct.
 		if t, err := time.Parse(time.RFC3339, at); err == nil {
 			return t.Unix(), nil
 		}
-		// Try "2006-01-02 15:04".
-		if t, err := time.Parse("2006-01-02 15:04", at); err == nil {
+		// No offset in this format; interpret in user's timezone.
+		if t, err := time.ParseInLocation("2006-01-02 15:04", at, tz.Location()); err == nil {
 			return t.Unix(), nil
 		}
 		return 0, fmt.Errorf("cannot parse --at value %q: use Unix timestamp or ISO8601 format", at)

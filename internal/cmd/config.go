@@ -27,17 +27,32 @@ type ConfigCmd struct {
 type ConfigSetCmd struct {
 	Token      string `name:"token" help:"Slack API token (may leak via shell history)" optional:""`
 	TokenStdin bool   `name:"token-stdin" help:"Read token from stdin"`
+	Timezone   string `name:"timezone" help:"IANA timezone (e.g. Asia/Tokyo)" optional:""`
 }
 
 // Run executes the config set command.
 func (c *ConfigSetCmd) Run(cli *CLI) error {
-	token, err := c.resolveToken()
+	mgr := config.NewProfileConfigManager()
+	profileName, err := resolveProfileName(mgr, cli.Profile)
 	if err != nil {
 		return err
 	}
 
-	mgr := config.NewProfileConfigManager()
-	profileName, err := resolveProfileName(mgr, cli.Profile)
+	if c.Timezone != "" {
+		if err := mgr.SetTimezone(c.Timezone, cli.Profile); err != nil {
+			return err
+		}
+		fmt.Println(color.GreenString(
+			"Timezone %q saved for profile %q", c.Timezone, profileName,
+		))
+	}
+
+	// Skip token prompt when only --timezone was specified.
+	if c.Token == "" && !c.TokenStdin && c.Timezone != "" {
+		return nil
+	}
+
+	token, err := c.resolveToken()
 	if err != nil {
 		return err
 	}
@@ -47,7 +62,9 @@ func (c *ConfigSetCmd) Run(cli *CLI) error {
 		return err
 	}
 
-	fmt.Println(color.GreenString("%s token saved successfully for profile %q", kind, profileName))
+	fmt.Println(color.GreenString(
+		"%s token saved successfully for profile %q", kind, profileName,
+	))
 	return nil
 }
 
@@ -180,6 +197,9 @@ func (c *ConfigGetCmd) Run(cli *CLI) error {
 	}
 	if cfg.UserToken != "" {
 		fmt.Printf("  User token: %s\n", color.CyanString(mgr.MaskToken(cfg.UserToken)))
+	}
+	if cfg.Timezone != "" {
+		fmt.Printf("  Timezone:   %s\n", color.CyanString(cfg.Timezone))
 	}
 	fmt.Printf("  Updated: %s\n", cfg.UpdatedAt)
 	return nil

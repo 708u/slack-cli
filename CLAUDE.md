@@ -31,6 +31,7 @@ internal/
     reaction.go pin.go star.go reminder.go file.go canvas.go
     types.go            # All domain types
   format/               # Output formatters (table/simple/json)
+  tz/                   # Timezone holder (Set/Location)
   util/                 # Pure helpers (sanitize, date, mention, channel)
 ```
 
@@ -93,6 +94,13 @@ Tokens are AES-256-GCM encrypted in `~/.slack-cli/config.json`.
 Master key stored in `~/.slack-cli-secrets/master.key`
 (auto-generated on first use).
 Multi-profile support via `--profile` flag on any command.
+
+### Timezone
+
+`--tz` global flag (env: `SLACK_CLI_TZ`) or per-profile
+`config set --timezone <IANA>`. Resolution order:
+`--tz` flag > profile config > `time.Local`.
+`internal/tz` package holds the active `*time.Location`.
 
 ### Required Scopes
 

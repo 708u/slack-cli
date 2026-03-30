@@ -2,7 +2,6 @@ package format
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/fatih/color"
 )
@@ -50,7 +49,8 @@ func FormatScheduledMessages(messages []ScheduledMessageInfo, f Format) {
 	}
 }
 
-// FormatPostAt converts a Unix epoch (seconds) to an ISO 8601 string.
+// FormatPostAt converts a Unix epoch (seconds) to an ISO 8601 string
+// in the configured timezone.
 func FormatPostAt(postAt int64) string {
-	return time.Unix(postAt, 0).UTC().Format(time.RFC3339)
+	return FormatUnixISO(postAt)
 }

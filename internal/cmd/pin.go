@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/708u/slack-cli/internal/format"
 	"github.com/708u/slack-cli/internal/slack"
@@ -72,10 +71,7 @@ func (c *PinListCmd) Run(client *slack.Client) error {
 		format.PrintJSON(items)
 	case format.Simple:
 		for _, item := range items {
-			created := ""
-			if item.Created != 0 {
-				created = time.Unix(item.Created, 0).UTC().Format(time.RFC3339)
-			}
+			created := format.FormatUnixISO(item.Created)
 			text := ""
 			ts := ""
 			if item.Message != nil {
@@ -89,10 +85,7 @@ func (c *PinListCmd) Run(client *slack.Client) error {
 		bold.Printf("%-26s%-20s%-12s%s\n", "Created", "Timestamp", "Creator", "Text")
 		fmt.Println(format.Separator(70))
 		for _, item := range items {
-			created := ""
-			if item.Created != 0 {
-				created = time.Unix(item.Created, 0).UTC().Format(time.RFC3339)
-			}
+			created := format.FormatUnixISO(item.Created)
 			text := ""
 			ts := ""
 			if item.Message != nil {
